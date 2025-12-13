@@ -1,6 +1,3 @@
-// src/features/pomo/presentation/stores/usePomoStore.ts
-// Pomo store integrated with Clean Architecture
-
 import { create } from 'zustand';
 import {
     TimerMode,
@@ -14,7 +11,6 @@ import {
 } from '../../domain/entities/FocusSession';
 import { pomoRepository } from '../../infrastructure/repositories/PomoRepository';
 
-// Helper to check if date is today
 const isToday = (date: Date): boolean => {
     const today = new Date();
     return (
@@ -24,28 +20,20 @@ const isToday = (date: Date): boolean => {
     );
 };
 
-// Helper to get today's date string
 const getTodayString = (): string => {
     return new Date().toISOString().split('T')[0];
 };
 
 interface PomoState {
-    // Timer State
     mode: TimerMode;
     timerState: TimerState;
     remainingTime: number;
     elapsedTime: number;
-
-    // Presets
     presets: TimerPreset[];
     activePreset: TimerPreset | null;
-
-    // Sessions
     sessions: FocusSessionProps[];
     currentSessionStart: Date | null;
     initialized: boolean;
-
-    // Actions
     initialize: () => Promise<void>;
     setMode: (mode: TimerMode) => void;
     setActivePreset: (preset: TimerPreset) => void;
@@ -57,8 +45,6 @@ interface PomoState {
     completeSession: () => Promise<void>;
     addPreset: (preset: TimerPreset) => Promise<void>;
     removePreset: (id: string) => Promise<void>;
-
-    // Selectors
     getStats: () => FocusStats;
     getTodaySessions: () => FocusSessionProps[];
 }

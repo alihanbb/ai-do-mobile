@@ -1,6 +1,3 @@
-// src/features/auth/domain/entities/User.ts
-// User entity with authentication logic
-
 import { BaseEntity } from '../../../../core/domain/entities/BaseEntity';
 import { UniqueId } from '../../../../core/domain/value-objects/UniqueId';
 
@@ -24,7 +21,6 @@ export interface UserPreferences {
     };
 }
 
-// Legacy UserSettings for backward compatibility
 export interface UserSettings {
     notifications: boolean;
     darkMode: boolean;
@@ -41,11 +37,6 @@ export interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-}
-
-export interface LoginCredentials {
-    email: string;
-    password: string;
 }
 
 export interface RegisterData {
@@ -71,8 +62,6 @@ export class User extends BaseEntity<UserProps> {
             language: 'tr',
         };
     }
-
-    // Factory methods
     static create(email: string, name: string): User {
         return new User({
             id: new UniqueId().value,
@@ -91,13 +80,10 @@ export class User extends BaseEntity<UserProps> {
         });
     }
 
-    // Getters
     get email(): string { return this._email; }
     get name(): string { return this._name; }
     get avatar(): string | undefined { return this._avatar; }
     get preferences(): UserPreferences { return { ...this._preferences }; }
-
-    // Business logic
     updateName(name: string): void {
         if (!name.trim()) {
             throw new Error('Name cannot be empty');

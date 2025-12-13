@@ -1,11 +1,10 @@
-// src/features/auth/infrastructure/repositories/AuthRepository.ts
-// Auth repository implementation using secure storage
-
-import { User, UserProps, AuthState, LoginCredentials, RegisterData } from '../../domain/entities/User';
-import { IAuthRepository, AuthTokens } from '../../domain/repositories/IAuthRepository';
+import { User, UserProps, RegisterData } from '../../domain/entities/User';
+import { IAuthRepository, AuthTokens, LoginCredentials } from '../../domain/repositories/IAuthRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';
 import { IStorageAdapter } from '../../../../core/infrastructure/storage/IStorageAdapter';
 import { secureStorage } from '../../../../core/infrastructure/storage/SecureStorageAdapter';
+import { identityApi } from '../api/identityApi';
+import { AuthResponseDto } from '../api/apiTypes';
 
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -15,22 +14,39 @@ const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
 export class AuthRepository implements IAuthRepository {
     constructor(private readonly storage: IStorageAdapter = secureStorage) { }
 
+    private mapResponseToUser(response: AuthResponseDto): User {
+        return User.fromJSON({
+            id: response.user.id,
+            email: response.user.email,
+            name: response.user.name,
+            avatar: response.user.avatarUrl || undefined,
+            createdAt: new Date(response.user.createdAt),
+            updatedAt: new Date(),
+        });
+    }
+
     async login(credentials: LoginCredentials): Promise<Result<{ user: User; tokens: AuthTokens }, Error>> {
         try {
-            // Simulate API call - replace with actual API integration
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const result = await identityApi.login({
+                email: credentials.email,
+                password: credentials.password,
+            });
 
-            // Mock user for development
-            const mockUser = User.create(credentials.email, 'Kullanıcı');
-            const mockTokens: AuthTokens = {
-                accessToken: 'mock-token-' + Date.now(),
+            if (!result.success || !result.data) {
+                return Result.fail(new Error(result.error?.message || 'Login failed'));
+            }
+
+            const response = result.data;
+            const user = this.mapResponseToUser(response);
+            const tokens: AuthTokens = {
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken,
             };
 
-            // Save to storage
-            await this.saveTokens(mockTokens);
-            await this.storage.set(USER_DATA_KEY, mockUser.toJSON());
+            await this.saveTokens(tokens);
+            await this.storage.set(USER_DATA_KEY, user.toJSON());
 
-            return Result.ok({ user: mockUser, tokens: mockTokens });
+            return Result.ok({ user, tokens });
         } catch (error) {
             return Result.fail(error instanceof Error ? error : new Error('Login failed'));
         }
@@ -38,18 +54,27 @@ export class AuthRepository implements IAuthRepository {
 
     async register(credentials: RegisterData): Promise<Result<{ user: User; tokens: AuthTokens }, Error>> {
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const result = await identityApi.register({
+                name: credentials.name,
+                email: credentials.email,
+                password: credentials.password,
+            });
 
-            const mockUser = User.create(credentials.email, credentials.name);
-            const mockTokens: AuthTokens = {
-                accessToken: 'mock-token-' + Date.now(),
+            if (!result.success || !result.data) {
+                return Result.fail(new Error(result.error?.message || 'Registration failed'));
+            }
+
+            const response = result.data;
+            const user = this.mapResponseToUser(response);
+            const tokens: AuthTokens = {
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken,
             };
 
-            await this.saveTokens(mockTokens);
-            await this.storage.set(USER_DATA_KEY, mockUser.toJSON());
+            await this.saveTokens(tokens);
+            await this.storage.set(USER_DATA_KEY, user.toJSON());
 
-            return Result.ok({ user: mockUser, tokens: mockTokens });
+            return Result.ok({ user, tokens });
         } catch (error) {
             return Result.fail(error instanceof Error ? error : new Error('Registration failed'));
         }
@@ -135,5 +160,4 @@ export class AuthRepository implements IAuthRepository {
     }
 }
 
-// Singleton instance
 export const authRepository = new AuthRepository();

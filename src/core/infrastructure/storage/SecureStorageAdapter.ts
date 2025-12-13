@@ -1,6 +1,3 @@
-// src/core/infrastructure/storage/SecureStorageAdapter.ts
-// Secure storage adapter implementation using expo-secure-store
-
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { IStorageAdapter } from './IStorageAdapter';

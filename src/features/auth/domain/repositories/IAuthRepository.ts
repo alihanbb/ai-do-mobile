@@ -1,7 +1,4 @@
-// src/features/auth/domain/repositories/IAuthRepository.ts
-// Auth repository interface
-
-import { User, UserProps } from '../entities/User';
+import { User } from '../entities/User';
 import { Result } from '../../../../core/domain/value-objects/Result';
 
 export interface LoginCredentials {

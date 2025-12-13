@@ -1,6 +1,3 @@
-// src/features/auth/domain/usecases/Register.ts
-// Register use case
-
 import { User } from '../entities/User';
 import { IAuthRepository, RegisterCredentials, AuthTokens } from '../repositories/IAuthRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';
@@ -10,7 +7,6 @@ export class RegisterUseCase {
 
     async execute(credentials: RegisterCredentials): Promise<Result<{ user: User; tokens: AuthTokens }, Error>> {
         try {
-            // Validation
             if (!credentials.email.trim()) {
                 return Result.fail(new Error('Email is required'));
             }

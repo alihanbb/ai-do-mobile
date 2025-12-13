@@ -1,6 +1,3 @@
-// src/features/auth/domain/usecases/Login.ts
-// Login use case
-
 import { User } from '../entities/User';
 import { IAuthRepository, LoginCredentials, AuthTokens } from '../repositories/IAuthRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';
@@ -10,7 +7,6 @@ export class LoginUseCase {
 
     async execute(credentials: LoginCredentials): Promise<Result<{ user: User; tokens: AuthTokens }, Error>> {
         try {
-            // Validation
             if (!credentials.email.trim()) {
                 return Result.fail(new Error('Email is required'));
             }

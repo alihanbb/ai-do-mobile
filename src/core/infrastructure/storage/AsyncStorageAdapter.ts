@@ -1,6 +1,3 @@
-// src/core/infrastructure/storage/AsyncStorageAdapter.ts
-// Async storage adapter for general data persistence
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IStorageAdapter } from './IStorageAdapter';
 
@@ -42,5 +39,4 @@ export class AsyncStorageAdapter implements IStorageAdapter {
     }
 }
 
-// Singleton instance
 export const asyncStorage = new AsyncStorageAdapter();

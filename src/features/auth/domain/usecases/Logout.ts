@@ -1,6 +1,3 @@
-// src/features/auth/domain/usecases/Logout.ts
-// Logout use case
-
 import { IAuthRepository } from '../repositories/IAuthRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';
 
