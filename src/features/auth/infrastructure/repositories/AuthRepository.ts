@@ -158,6 +158,11 @@ export class AuthRepository implements IAuthRepository {
     async setOnboardingComplete(): Promise<void> {
         await this.storage.set(ONBOARDING_COMPLETE_KEY, true);
     }
+
+    // For testing purposes - reset onboarding
+    async resetOnboarding(): Promise<void> {
+        await this.storage.remove(ONBOARDING_COMPLETE_KEY);
+    }
 }
 
 export const authRepository = new AuthRepository();

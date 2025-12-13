@@ -36,7 +36,7 @@ export const Input: React.FC<InputProps> = ({
             >
                 {icon && <View style={styles.icon}>{icon}</View>}
                 <TextInput
-                    style={[styles.input, icon && styles.inputWithIcon, style]}
+                    style={[styles.input, icon ? styles.inputWithIcon : undefined]}
                     placeholderTextColor={colors.textMuted}
                     {...props}
                 />

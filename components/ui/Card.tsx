@@ -30,7 +30,7 @@ export const Card: React.FC<CardProps> = ({
         },
         elevated: {
             backgroundColor: colors.surfaceSolid,
-            shadowColor: colors.shadowDark,
+            shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 8,

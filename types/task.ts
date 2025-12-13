@@ -7,8 +7,9 @@ export type {
     TaskPriority,
     Subtask,
     AISuggestion,
-    TaskFilter,
 } from '../src/features/task/domain/entities/Task';
+
+export type { TaskFilter } from '../src/features/task/domain/repositories/ITaskRepository';
 
 export {
     categoryIcons,

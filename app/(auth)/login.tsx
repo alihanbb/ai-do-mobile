@@ -7,6 +7,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     TouchableOpacity,
+    Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -31,8 +32,13 @@ export default function LoginScreen() {
             await login(email || 'test@test.com', password || '123456');
             router.replace('/(tabs)');
         } catch (err) {
-            setError('Giris basarisiz');
+            setError('Giriş başarısız');
         }
+    };
+
+    const handleGoogleLogin = () => {
+        // TODO: Implement Google OAuth
+        console.log('Google login pressed');
     };
 
     return (
@@ -57,12 +63,12 @@ export default function LoginScreen() {
                             <Sparkles size={32} color={colors.textPrimary} />
                         </LinearGradient>
                         <Text style={styles.appName}>AI-Do</Text>
-                        <Text style={styles.tagline}>Gelecegin Uretkenlik Asistani</Text>
+                        <Text style={styles.tagline}>Geleceğin Üretkenlik Asistanı</Text>
                     </View>
 
                     {/* Login Form */}
                     <Card variant='default' padding='lg' style={styles.formCard}>
-                        <Text style={styles.formTitle}>Hos Geldiniz</Text>
+                        <Text style={styles.formTitle}>Hoş Geldiniz</Text>
 
                         {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -81,8 +87,8 @@ export default function LoginScreen() {
                         />
 
                         <Input
-                            label='Sifre'
-                            placeholder='Sifreniz'
+                            label='Şifre'
+                            placeholder='Şifreniz'
                             value={password}
                             onChangeText={(text) => {
                                 setPassword(text);
@@ -94,23 +100,26 @@ export default function LoginScreen() {
                         />
 
                         <Button
-                            title='Giris Yap'
+                            title='Giriş Yap'
                             onPress={handleLogin}
                             loading={isLoading}
                             fullWidth
                             style={styles.button}
                         />
 
-                        <TouchableOpacity style={styles.forgotPassword}>
-                            <Text style={styles.forgotPasswordText}>Sifremi Unuttum</Text>
+                        <TouchableOpacity
+                            style={styles.forgotPassword}
+                            onPress={() => router.push('/(auth)/forgot-password')}
+                        >
+                            <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
                         </TouchableOpacity>
                     </Card>
 
                     {/* Register Link */}
                     <View style={styles.registerContainer}>
-                        <Text style={styles.registerText}>Hesabiniz yok mu? </Text>
+                        <Text style={styles.registerText}>Hesabınız yok mu? </Text>
                         <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-                            <Text style={styles.registerLink}>Kayit Olun</Text>
+                            <Text style={styles.registerLink}>Kayıt Olun</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -190,6 +199,51 @@ const styles = StyleSheet.create({
     forgotPasswordText: {
         color: colors.primary,
         fontSize: 14,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: spacing.xl,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.border,
+    },
+    dividerText: {
+        color: colors.textMuted,
+        fontSize: 14,
+        marginHorizontal: spacing.md,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.surfaceSolid,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.full,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        gap: spacing.md,
+    },
+    googleIconContainer: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    googleIcon: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#4285F4',
+    },
+    googleButtonText: {
+        color: colors.textPrimary,
+        fontSize: 16,
+        fontWeight: '500',
     },
     registerContainer: {
         flexDirection: 'row',

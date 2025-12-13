@@ -11,61 +11,134 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors, spacing, borderRadius } from '../../constants/colors';
-import { useAuthStore } from '../../store/authStore';
 import { Button } from '../../components/ui/Button';
 import {
     Sparkles,
     Brain,
     Zap,
-    CheckCircle2,
+    CheckSquare,
+    Timer,
+    Calendar,
+    TrendingUp,
     ChevronRight,
     ChevronLeft,
+    UserPlus,
+    LogIn,
 } from 'lucide-react-native';
+import {
+    MockTaskCard,
+    MockTimerPreview,
+    MockAICard,
+    MockCalendarPreview,
+    FeatureList,
+} from '../../components/onboarding';
 
 const { width } = Dimensions.get('window');
 
 interface OnboardingSlide {
     id: string;
+    type: 'welcome' | 'tasks' | 'timer' | 'ai' | 'analytics' | 'getstarted';
     icon: React.ReactNode;
     title: string;
-    description: string;
+    subtitle?: string;
     gradient: readonly [string, string];
 }
 
 const slides: OnboardingSlide[] = [
     {
         id: '1',
+        type: 'welcome',
         icon: <Sparkles size={64} color={colors.textPrimary} />,
         title: "AI-Do'ya Hoş Geldiniz",
-        description: 'Yapay zeka destekli görev yöneticisi ile verimliliğinizi artırın. Görevlerinizi akıllıca organize edin.',
+        subtitle: 'Yapay zeka destekli akıllı görev yöneticisi',
         gradient: [colors.primary, colors.primaryDark] as const,
     },
     {
         id: '2',
-        icon: <Brain size={64} color={colors.textPrimary} />,
+        type: 'tasks',
+        icon: <CheckSquare size={48} color={colors.textPrimary} />,
         title: 'Akıllı Görev Yönetimi',
-        description: 'AI, görevlerinizi analiz eder ve size en verimli zamanları önerir. Enerji seviyenize göre planlama yapar.',
-        gradient: [colors.secondary, colors.secondaryDark] as const,
+        subtitle: 'Görevlerinizi düzenli ve verimli tutun',
+        gradient: ['#3b82f6', '#2563eb'] as const,
     },
     {
         id: '3',
+        type: 'timer',
+        icon: <Timer size={48} color={colors.textPrimary} />,
+        title: 'Pomodoro & Odaklanma',
+        subtitle: 'Zamanınızı verimli kullanın',
+        gradient: ['#ef4444', '#dc2626'] as const,
+    },
+    {
+        id: '4',
+        type: 'ai',
+        icon: <Brain size={48} color={colors.textPrimary} />,
+        title: 'AI Destekli Özellikler',
+        subtitle: 'Yapay zeka size yardımcı olsun',
+        gradient: [colors.primary, colors.accent] as const,
+    },
+    {
+        id: '5',
+        type: 'analytics',
+        icon: <TrendingUp size={48} color={colors.textPrimary} />,
+        title: 'Takvim & İstatistikler',
+        subtitle: 'İlerlemenizi takip edin',
+        gradient: ['#22c55e', '#16a34a'] as const,
+    },
+    {
+        id: '6',
+        type: 'getstarted',
         icon: <Zap size={64} color={colors.textPrimary} />,
         title: 'Başlamaya Hazır mısınız?',
-        description: 'Doğal dil ile görev ekleyin, sesli komutlar kullanın ve hedeflerinize ulaşın.',
+        subtitle: 'Hemen ücretsiz hesabınızı oluşturun',
         gradient: [colors.accent, colors.accentDark] as const,
     },
 ];
 
+const taskFeatures = [
+    'Kategoriler ile düzenleme',
+    'Öncelik seviyeleri',
+    'Alt görevler oluşturma',
+    'Etiketler ve hatırlatıcılar',
+];
+
+const timerFeatures = [
+    'Pomodoro tekniği',
+    'Kronometre modu',
+    'Özelleştirilebilir presetler',
+    'Odaklanma istatistikleri',
+];
+
+const aiFeatures = [
+    'Akıllı görev önerileri',
+    'Doğal dil ile görev ekleme',
+    'Enerji seviyesi analizi',
+    'Otomatik zamanlama',
+];
+
+const analyticsFeatures = [
+    'Günlük/haftalık görünüm',
+    'Tamamlama oranları',
+    'Trend analizleri',
+    'Verimlilik raporları',
+];
+
+const allFeatures = [
+    'AI destekli görev yönetimi',
+    'Pomodoro & odaklanma araçları',
+    'Detaylı istatistikler',
+    'Kategori ve öncelik sistemi',
+    'Doğal dil ile görev ekleme',
+    'Kişiselleştirilmiş öneriler',
+];
+
 export default function OnboardingScreen() {
     const router = useRouter();
-    const { completeOnboarding } = useAuthStore();
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const handleNext = () => {
         if (currentIndex < slides.length - 1) {
             setCurrentIndex(currentIndex + 1);
-        } else {
-            handleComplete();
         }
     };
 
@@ -80,28 +153,145 @@ export default function OnboardingScreen() {
     };
 
     const handleComplete = async () => {
-        await completeOnboarding();
+        // Mark onboarding as seen for this session
+        if ((global as any).markOnboardingSeen) {
+            (global as any).markOnboardingSeen();
+        }
         router.replace('/(auth)/login');
     };
 
+    const handleRegister = async () => {
+        // Mark onboarding as seen for this session
+        if ((global as any).markOnboardingSeen) {
+            (global as any).markOnboardingSeen();
+        }
+        router.replace('/(auth)/register');
+    };
+
     const currentSlide = slides[currentIndex];
+    const isLastSlide = currentIndex === slides.length - 1;
+
+    const renderSlideContent = () => {
+        switch (currentSlide.type) {
+            case 'welcome':
+                return (
+                    <View style={styles.welcomeContent}>
+                        <Text style={styles.welcomeDescription}>
+                            Görevlerinizi akıllıca yönetin, zamanınızı verimli kullanın ve
+                            hedeflerinize ulaşın. AI-Do, yapay zeka ile desteklenen modern
+                            bir görev yönetim uygulamasıdır.
+                        </Text>
+                        <View style={styles.welcomeHighlights}>
+                            <View style={styles.highlightItem}>
+                                <CheckSquare size={24} color={colors.primary} />
+                                <Text style={styles.highlightText}>Görev Yönetimi</Text>
+                            </View>
+                            <View style={styles.highlightItem}>
+                                <Timer size={24} color={colors.secondary} />
+                                <Text style={styles.highlightText}>Pomodoro Timer</Text>
+                            </View>
+                            <View style={styles.highlightItem}>
+                                <Brain size={24} color={colors.accent} />
+                                <Text style={styles.highlightText}>AI Önerileri</Text>
+                            </View>
+                        </View>
+                    </View>
+                );
+
+            case 'tasks':
+                return (
+                    <View style={styles.featureContent}>
+                        <MockTaskCard />
+                        <View style={styles.featureListContainer}>
+                            <FeatureList features={taskFeatures} />
+                        </View>
+                    </View>
+                );
+
+            case 'timer':
+                return (
+                    <View style={styles.featureContent}>
+                        <MockTimerPreview />
+                        <View style={styles.featureListContainer}>
+                            <FeatureList features={timerFeatures} color={colors.primary} />
+                        </View>
+                    </View>
+                );
+
+            case 'ai':
+                return (
+                    <View style={styles.featureContent}>
+                        <View style={styles.aiCardsContainer}>
+                            <MockAICard type="energy" />
+                            <MockAICard type="time" />
+                        </View>
+                        <View style={styles.featureListContainer}>
+                            <FeatureList features={aiFeatures} color={colors.primary} />
+                        </View>
+                    </View>
+                );
+
+            case 'analytics':
+                return (
+                    <View style={styles.featureContent}>
+                        <MockCalendarPreview />
+                        <View style={styles.featureListContainer}>
+                            <FeatureList features={analyticsFeatures} color={colors.success} />
+                        </View>
+                    </View>
+                );
+
+            case 'getstarted':
+                return (
+                    <View style={styles.getStartedContent}>
+                        <View style={styles.allFeaturesContainer}>
+                            <Text style={styles.allFeaturesTitle}>Tüm Özellikler</Text>
+                            <FeatureList features={allFeatures} />
+                        </View>
+                        <View style={styles.authButtons}>
+                            <Button
+                                title="Hesap Oluştur"
+                                onPress={handleRegister}
+                                fullWidth
+                                icon={<UserPlus size={20} color={colors.textPrimary} />}
+                            />
+                            <Button
+                                title="Giriş Yap"
+                                onPress={handleComplete}
+                                variant="secondary"
+                                fullWidth
+                                icon={<LogIn size={20} color={colors.primary} />}
+                            />
+                        </View>
+                    </View>
+                );
+
+            default:
+                return null;
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Skip Button */}
+            {/* Header */}
             <View style={styles.header}>
-                <Pressable
-                    onPress={handleSkip}
-                    style={({ pressed }) => [
-                        styles.skipButton,
-                        pressed && styles.buttonPressed
-                    ]}
-                >
-                    <Text style={styles.skipText}>Atla</Text>
-                </Pressable>
+                <View style={styles.pageIndicator}>
+                    <Text style={styles.pageText}>{currentIndex + 1}/{slides.length}</Text>
+                </View>
+                {!isLastSlide && (
+                    <Pressable
+                        onPress={handleSkip}
+                        style={({ pressed }) => [
+                            styles.skipButton,
+                            pressed && styles.buttonPressed
+                        ]}
+                    >
+                        <Text style={styles.skipText}>Atla</Text>
+                    </Pressable>
+                )}
             </View>
 
-            {/* Current Slide */}
+            {/* Slide Content */}
             <ScrollView
                 contentContainerStyle={styles.slideContainer}
                 showsVerticalScrollIndicator={false}
@@ -112,6 +302,7 @@ export default function OnboardingScreen() {
                         style={styles.slideGradient}
                     />
 
+                    {/* Icon */}
                     <View style={styles.iconContainer}>
                         <LinearGradient
                             colors={currentSlide.gradient}
@@ -121,19 +312,16 @@ export default function OnboardingScreen() {
                         </LinearGradient>
                     </View>
 
+                    {/* Title & Subtitle */}
                     <Text style={styles.title}>{currentSlide.title}</Text>
-                    <Text style={styles.description}>{currentSlide.description}</Text>
-
-                    {currentIndex === slides.length - 1 && (
-                        <View style={styles.features}>
-                            {['Doğal Dil İşleme', 'Enerji Analizi', 'Akıllı Öneriler'].map((feature, i) => (
-                                <View key={i} style={styles.featureItem}>
-                                    <CheckCircle2 size={16} color={colors.success} />
-                                    <Text style={styles.featureText}>{feature}</Text>
-                                </View>
-                            ))}
-                        </View>
+                    {currentSlide.subtitle && (
+                        <Text style={styles.subtitle}>{currentSlide.subtitle}</Text>
                     )}
+
+                    {/* Dynamic Content */}
+                    <View style={styles.contentContainer}>
+                        {renderSlideContent()}
+                    </View>
                 </View>
             </ScrollView>
 
@@ -142,8 +330,9 @@ export default function OnboardingScreen() {
                 {/* Dots */}
                 <View style={styles.dotsContainer}>
                     {slides.map((_, index) => (
-                        <View
+                        <Pressable
                             key={index}
+                            onPress={() => setCurrentIndex(index)}
                             style={[
                                 styles.dot,
                                 index === currentIndex ? styles.dotActive : styles.dotInactive,
@@ -153,37 +342,30 @@ export default function OnboardingScreen() {
                 </View>
 
                 {/* Navigation Buttons */}
-                <View style={styles.navigationRow}>
-                    {currentIndex > 0 && (
-                        <Pressable
-                            onPress={handlePrev}
-                            style={({ pressed }) => [
-                                styles.navButton,
-                                pressed && styles.buttonPressed
-                            ]}
-                        >
-                            <ChevronLeft size={24} color={colors.textSecondary} />
-                        </Pressable>
-                    )}
+                {!isLastSlide && (
+                    <View style={styles.navigationRow}>
+                        {currentIndex > 0 && (
+                            <Pressable
+                                onPress={handlePrev}
+                                style={({ pressed }) => [
+                                    styles.navButton,
+                                    pressed && styles.buttonPressed
+                                ]}
+                            >
+                                <ChevronLeft size={24} color={colors.textSecondary} />
+                            </Pressable>
+                        )}
 
-                    <View style={styles.mainButtonContainer}>
-                        {currentIndex === slides.length - 1 ? (
-                            <Button
-                                title="Başlayın"
-                                onPress={handleComplete}
-                                fullWidth
-                                icon={<ChevronRight size={20} color={colors.textPrimary} />}
-                            />
-                        ) : (
+                        <View style={styles.mainButtonContainer}>
                             <Button
                                 title="Devam"
                                 onPress={handleNext}
                                 fullWidth
                                 icon={<ChevronRight size={20} color={colors.textPrimary} />}
                             />
-                        )}
+                        </View>
                     </View>
-                </View>
+                )}
             </View>
         </SafeAreaView>
     );
@@ -196,8 +378,20 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         padding: spacing.lg,
+    },
+    pageIndicator: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+    },
+    pageText: {
+        color: colors.textSecondary,
+        fontSize: 12,
+        fontWeight: '500',
     },
     skipButton: {
         paddingVertical: spacing.sm,
@@ -206,7 +400,7 @@ const styles = StyleSheet.create({
     },
     buttonPressed: {
         opacity: 0.7,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
     skipText: {
         color: colors.textSecondary,
@@ -221,7 +415,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: spacing.xxl,
-        minHeight: 400,
     },
     slideGradient: {
         position: 'absolute',
@@ -231,11 +424,11 @@ const styles = StyleSheet.create({
         height: 300,
     },
     iconContainer: {
-        marginBottom: spacing.xxxl,
+        marginBottom: spacing.xl,
     },
     iconBackground: {
-        width: 120,
-        height: 120,
+        width: 100,
+        height: 100,
         borderRadius: borderRadius.xxl,
         alignItems: 'center',
         justifyContent: 'center',
@@ -246,32 +439,82 @@ const styles = StyleSheet.create({
         elevation: 12,
     },
     title: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: 'bold',
         color: colors.textPrimary,
         textAlign: 'center',
-        marginBottom: spacing.lg,
+        marginBottom: spacing.sm,
     },
-    description: {
+    subtitle: {
         fontSize: 16,
         color: colors.textSecondary,
         textAlign: 'center',
+        marginBottom: spacing.lg,
+    },
+    contentContainer: {
+        width: '100%',
+        marginTop: spacing.lg,
+    },
+    // Welcome slide
+    welcomeContent: {
+        alignItems: 'center',
+    },
+    welcomeDescription: {
+        fontSize: 15,
+        color: colors.textSecondary,
+        textAlign: 'center',
         lineHeight: 24,
-        paddingHorizontal: spacing.md,
+        marginBottom: spacing.xl,
     },
-    features: {
-        marginTop: spacing.xxl,
-        gap: spacing.md,
-    },
-    featureItem: {
+    welcomeHighlights: {
         flexDirection: 'row',
+        justifyContent: 'center',
+        gap: spacing.xl,
+    },
+    highlightItem: {
         alignItems: 'center',
         gap: spacing.sm,
     },
-    featureText: {
-        color: colors.textPrimary,
-        fontSize: 14,
+    highlightText: {
+        fontSize: 12,
+        color: colors.textSecondary,
     },
+    // Feature slides
+    featureContent: {
+        gap: spacing.xl,
+    },
+    featureListContainer: {
+        backgroundColor: colors.surfaceSolid,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    // AI slide
+    aiCardsContainer: {
+        gap: spacing.md,
+    },
+    // Get Started slide
+    getStartedContent: {
+        gap: spacing.xl,
+    },
+    allFeaturesContainer: {
+        backgroundColor: colors.surfaceSolid,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    allFeaturesTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.textPrimary,
+        marginBottom: spacing.md,
+    },
+    authButtons: {
+        gap: spacing.md,
+    },
+    // Bottom section
     bottomSection: {
         paddingHorizontal: spacing.xxl,
         paddingBottom: spacing.xxxl,
@@ -280,8 +523,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: spacing.xxl,
-        gap: spacing.sm,
+        marginBottom: spacing.xl,
+        gap: spacing.xs,
     },
     dot: {
         height: 8,

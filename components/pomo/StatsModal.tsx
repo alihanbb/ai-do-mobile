@@ -68,7 +68,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 0 from yesterday <Text style={styles.upArrow}>↑</Text>
                             </Text>
                             <Text style={[styles.summaryValue, { color: colors.primary }]}>
-                                {stats.todayPomoCount}
+                                {stats.todayPomoCount ?? 0}
                             </Text>
                         </View>
                         <View style={styles.summaryCard}>
@@ -77,9 +77,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 0h0m from yesterday <Text style={styles.upArrow}>↑</Text>
                             </Text>
                             <Text style={[styles.summaryValue, { color: colors.secondary }]}>
-                                {Math.floor(stats.todayFocusDuration / 60)}
+                                {Math.floor((stats.todayFocusDuration ?? 0) / 60)}
                                 <Text style={styles.summaryUnit}>h </Text>
-                                {stats.todayFocusDuration % 60}
+                                {(stats.todayFocusDuration ?? 0) % 60}
                                 <Text style={styles.summaryUnit}>m</Text>
                             </Text>
                         </View>
@@ -89,15 +89,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <View style={styles.summaryCard}>
                             <Text style={styles.summaryLabel}>Total Pomo</Text>
                             <Text style={[styles.summaryValue, { color: colors.primary }]}>
-                                {stats.totalPomoCount}
+                                {stats.totalPomoCount ?? 0}
                             </Text>
                         </View>
                         <View style={styles.summaryCard}>
                             <Text style={styles.summaryLabel}>Total Focus Duration</Text>
                             <Text style={[styles.summaryValue, { color: colors.secondary }]}>
-                                {Math.floor(stats.totalFocusDuration / 60)}
+                                {Math.floor((stats.totalFocusDuration ?? 0) / 60)}
                                 <Text style={styles.summaryUnit}>h </Text>
-                                {stats.totalFocusDuration % 60}
+                                {(stats.totalFocusDuration ?? 0) % 60}
                                 <Text style={styles.summaryUnit}>m</Text>
                             </Text>
                         </View>

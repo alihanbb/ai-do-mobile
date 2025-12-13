@@ -1,10 +1,7 @@
-import { User } from '../entities/User';
+import { User, LoginCredentials, RegisterData } from '../entities/User';
 import { Result } from '../../../../core/domain/value-objects/Result';
 
-export interface LoginCredentials {
-    email: string;
-    password: string;
-}
+export type { LoginCredentials };
 
 export interface RegisterCredentials {
     email: string;

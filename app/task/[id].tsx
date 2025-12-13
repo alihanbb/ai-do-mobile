@@ -312,7 +312,7 @@ export default function TaskDetailScreen() {
                             <Button
                                 title={task.completed ? 'Tamamlanmadı İşaretle' : 'Tamamlandı İşaretle'}
                                 variant={task.completed ? 'secondary' : 'primary'}
-                                onPress={() => toggleComplete(task.id)}
+                                onPress={async () => { await toggleComplete(task.id); }}
                                 fullWidth
                                 icon={<Check size={20} color={colors.textPrimary} />}
                             />

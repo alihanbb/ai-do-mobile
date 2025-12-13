@@ -13,12 +13,14 @@ function RootLayoutContent() {
     const router = useRouter();
     const segments = useSegments();
     const navigationState = useRootNavigationState();
-    const { isAuthenticated, isInitialized, isOnboardingComplete, hydrateAuth } = useAuthStore();
+    const { isAuthenticated, isInitialized, hydrateAuth } = useAuthStore();
     const { isDark } = useThemeStore();
     const { initialize: initializeTasks } = useTaskStore();
     const { initialize: initializePomo } = usePomoStore();
     const colors = getColors(isDark);
     const [isReady, setIsReady] = useState(false);
+    // Track if user has seen onboarding THIS session (resets on app restart)
+    const [hasSeenOnboardingThisSession, setHasSeenOnboardingThisSession] = useState(false);
 
     // Initialize auth, task, and pomo state
     useEffect(() => {
@@ -35,25 +37,43 @@ function RootLayoutContent() {
     useEffect(() => {
         if (!isReady || !navigationState?.key) return;
 
-        const inAuthGroup = segments[0] === '(auth)';
-        const currentScreen = segments.length > 1 ? segments[1] : '';
+        const segmentArray = segments as string[];
+        const inAuthGroup = segmentArray[0] === '(auth)';
+        const currentScreen = segmentArray.length > 1 ? segmentArray[1] : '';
 
-        // Don't redirect if we're already on the target screen
-        if (!isOnboardingComplete && currentScreen !== 'onboarding') {
+        console.log('📍 Navigation Debug:', {
+            hasSeenOnboardingThisSession,
+            isAuthenticated,
+            inAuthGroup,
+            currentScreen,
+            segments: segmentArray,
+        });
+
+        // Always show onboarding first on each app launch
+        if (!hasSeenOnboardingThisSession && currentScreen !== 'onboarding') {
+            console.log('🚀 Redirecting to onboarding...');
             router.replace('/(auth)/onboarding');
             return;
         }
 
-        if (isOnboardingComplete && !isAuthenticated && !inAuthGroup) {
+        // After onboarding, check authentication
+        if (hasSeenOnboardingThisSession && !isAuthenticated && !inAuthGroup) {
             router.replace('/(auth)/login');
             return;
         }
 
-        if (isOnboardingComplete && isAuthenticated && inAuthGroup && currentScreen !== 'onboarding') {
+        if (hasSeenOnboardingThisSession && isAuthenticated && inAuthGroup && currentScreen !== 'onboarding') {
             router.replace('/(tabs)');
             return;
         }
-    }, [isAuthenticated, isReady, isOnboardingComplete, segments, navigationState?.key]);
+    }, [isAuthenticated, isReady, hasSeenOnboardingThisSession, segments, navigationState?.key]);
+
+    // Export function to mark onboarding as seen (will be called from onboarding screen)
+    useEffect(() => {
+        (global as any).markOnboardingSeen = () => {
+            setHasSeenOnboardingThisSession(true);
+        };
+    }, []);
 
     if (!isReady || !isInitialized) {
         return (

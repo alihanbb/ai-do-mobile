@@ -1,8 +1,5 @@
-// src/features/task/presentation/stores/useTaskStore.ts
-// Task store integrated with Clean Architecture
-
 import { create } from 'zustand';
-import { Task, TaskProps, TaskCategory, TaskPriority } from '../../domain/entities/Task';
+import { Task, TaskProps, TaskCategory, TaskPriority, AISuggestion } from '../../domain/entities/Task';
 import { TaskRepository } from '../../infrastructure/repositories/TaskRepository';
 import { asyncStorage } from '../../../../core/infrastructure/storage';
 import {
@@ -13,7 +10,9 @@ import {
     ToggleTaskCompleteUseCase,
 } from '../../domain/usecases';
 
-// Create repository and use cases
+// Re-export for convenience
+export type { AISuggestion };
+
 const taskRepository = new TaskRepository(asyncStorage);
 const createTaskUseCase = new CreateTaskUseCase(taskRepository);
 const updateTaskUseCase = new UpdateTaskUseCase(taskRepository);
@@ -21,18 +20,6 @@ const deleteTaskUseCase = new DeleteTaskUseCase(taskRepository);
 const getAllTasksUseCase = new GetAllTasksUseCase(taskRepository);
 const toggleCompleteUseCase = new ToggleTaskCompleteUseCase(taskRepository);
 
-// AI Suggestion type
-export interface AISuggestion {
-    id: string;
-    type: 'task_time' | 'break' | 'reminder' | 'energy';
-    title: string;
-    message: string;
-    taskId?: string;
-    suggestedTime?: Date;
-    dismissed: boolean;
-}
-
-// Store state interface
 interface TaskState {
     tasks: TaskProps[];
     suggestions: AISuggestion[];
@@ -40,7 +27,6 @@ interface TaskState {
     error: string | null;
     initialized: boolean;
 
-    // Actions
     initialize: () => Promise<void>;
     createTask: (data: {
         title: string;
@@ -56,13 +42,10 @@ interface TaskState {
     toggleComplete: (id: string) => Promise<boolean>;
     dismissSuggestion: (id: string) => void;
 
-    // Selectors
     getTodayTasks: () => TaskProps[];
     getCompletedTasks: () => TaskProps[];
     getPendingTasks: () => TaskProps[];
 }
-
-// Mock suggestions for AI features
 const mockSuggestions: AISuggestion[] = [
     {
         id: '1',
@@ -149,7 +132,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     },
 
     toggleComplete: async (id) => {
-        // Optimistic update
         set((state) => ({
             tasks: state.tasks.map((t) =>
                 t.id === id ? { ...t, completed: !t.completed, updatedAt: new Date() } : t
@@ -159,7 +141,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         const result = await toggleCompleteUseCase.execute(id);
 
         if (result.isFailure) {
-            // Rollback on failure
             set((state) => ({
                 tasks: state.tasks.map((t) =>
                     t.id === id ? { ...t, completed: !t.completed } : t

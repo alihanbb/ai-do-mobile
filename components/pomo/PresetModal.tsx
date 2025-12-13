@@ -41,6 +41,7 @@ export const PresetModal: React.FC<PresetModalProps> = ({
             icon,
             mode,
             duration: parseInt(duration) || 25,
+            color: '#7c3aed', // Default color
         };
         onSave(preset);
         onClose();

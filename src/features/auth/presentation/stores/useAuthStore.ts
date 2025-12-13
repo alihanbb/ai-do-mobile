@@ -120,4 +120,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await authRepository.setOnboardingComplete();
         set({ isOnboardingComplete: true });
     },
+
+    // For testing - reset onboarding to see new pages
+    resetOnboarding: async () => {
+        await authRepository.resetOnboarding();
+        set({ isOnboardingComplete: false });
+    },
 }));

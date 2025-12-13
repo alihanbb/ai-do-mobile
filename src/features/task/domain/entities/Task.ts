@@ -1,6 +1,3 @@
-// src/features/task/domain/entities/Task.ts
-// Task entity with business logic
-
 import { BaseEntity } from '../../../../core/domain/entities/BaseEntity';
 import { UniqueId } from '../../../../core/domain/value-objects/UniqueId';
 
@@ -278,14 +275,3 @@ export interface AISuggestion {
     dismissed: boolean;
 }
 
-// TaskFilter interface
-export interface TaskFilter {
-    completed?: boolean;
-    category?: TaskCategory;
-    priority?: TaskPriority;
-    dateRange?: {
-        start: Date;
-        end: Date;
-    };
-    search?: string;
-}
