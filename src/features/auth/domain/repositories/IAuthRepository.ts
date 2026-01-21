@@ -25,4 +25,5 @@ export interface IAuthRepository {
     clearTokens(): Promise<Result<void, Error>>;
     isOnboardingComplete(): Promise<boolean>;
     setOnboardingComplete(): Promise<void>;
+    forgotPassword(email: string): Promise<Result<void, Error>>;
 }

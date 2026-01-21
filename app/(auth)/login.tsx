@@ -29,16 +29,15 @@ export default function LoginScreen() {
     const handleLogin = async () => {
         try {
             setError('');
-            await login(email || 'test@test.com', password || '123456');
-            router.replace('/(tabs)');
+            const success = await login(email || 'test@test.com', password || '123456');
+            if (success) {
+                router.replace('/(tabs)');
+            } else {
+                setError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
+            }
         } catch (err) {
-            setError('Giriş başarısız');
+            setError('Giriş başarısız. Lütfen tekrar deneyin.');
         }
-    };
-
-    const handleGoogleLogin = () => {
-        // TODO: Implement Google OAuth
-        console.log('Google login pressed');
     };
 
     return (
@@ -56,18 +55,24 @@ export default function LoginScreen() {
                 <View style={styles.content}>
                     {/* Logo */}
                     <View style={styles.logoContainer}>
-                        <LinearGradient
-                            colors={[colors.primary, colors.secondary]}
-                            style={styles.logo}
-                        >
-                            <Sparkles size={32} color={colors.textPrimary} />
-                        </LinearGradient>
+                        <Image
+                            source={require('../../assets/icon.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
                         <Text style={styles.appName}>AI-Do</Text>
                         <Text style={styles.tagline}>Geleceğin Üretkenlik Asistanı</Text>
                     </View>
 
                     {/* Login Form */}
-                    <Card variant='default' padding='lg' style={styles.formCard}>
+                    <Card
+                        variant='default'
+                        padding='lg'
+                        style={[
+                            styles.formCard,
+                            { backgroundColor: colors.card, borderColor: colors.border }
+                        ]}
+                    >
                         <Text style={styles.formTitle}>Hoş Geldiniz</Text>
 
                         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -152,12 +157,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.xxxl,
     },
-    logo: {
-        width: 72,
-        height: 72,
-        borderRadius: borderRadius.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
+    logoImage: {
+        width: 120,
+        height: 120,
         marginBottom: spacing.md,
     },
     appName: {
@@ -214,36 +216,6 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         fontSize: 14,
         marginHorizontal: spacing.md,
-    },
-    googleButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.surfaceSolid,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: borderRadius.full,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.xl,
-        gap: spacing.md,
-    },
-    googleIconContainer: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    googleIcon: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#4285F4',
-    },
-    googleButtonText: {
-        color: colors.textPrimary,
-        fontSize: 16,
-        fontWeight: '500',
     },
     registerContainer: {
         flexDirection: 'row',

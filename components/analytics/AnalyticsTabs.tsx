@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 
@@ -10,16 +11,17 @@ interface AnalyticsTabsProps {
     onTabChange: (tab: TabOption) => void;
 }
 
-export const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({
+export const AnalyticsTabs = React.memo(function AnalyticsTabs({
     activeTab,
     onTabChange,
-}) => {
+}: AnalyticsTabsProps) {
     const { isDark } = useThemeStore();
+    const { t, i18n } = useTranslation();
     const colors = getColors(isDark);
 
     const tabs: { key: TabOption; label: string }[] = [
-        { key: 'day', label: 'Gün' },
-        { key: 'week', label: 'Hafta' },
+        { key: 'day', label: i18n.language === 'en' ? 'Day' : 'Gün' },
+        { key: 'week', label: i18n.language === 'en' ? 'Week' : 'Hafta' },
         { key: 'trend', label: 'Trend' },
     ];
 
@@ -48,7 +50,7 @@ export const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({
             ))}
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

@@ -10,11 +10,11 @@ interface InsightCardProps {
     type?: 'positive' | 'negative' | 'neutral';
 }
 
-export const InsightCard: React.FC<InsightCardProps> = ({
+export const InsightCard = React.memo(function InsightCard({
     title,
     description,
     type = 'neutral'
-}) => {
+}: InsightCardProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -48,7 +48,7 @@ export const InsightCard: React.FC<InsightCardProps> = ({
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

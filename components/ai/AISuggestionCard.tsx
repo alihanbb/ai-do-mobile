@@ -2,7 +2,8 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AISuggestion } from '../../types/task';
-import { colors, borderRadius, spacing } from '../../constants/colors';
+import { getColors, borderRadius, spacing } from '../../constants/colors';
+import { useThemeStore } from '../../store/themeStore';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Sparkles, X, Zap, Clock, Bell } from 'lucide-react-native';
@@ -18,6 +19,9 @@ export const AISuggestionCard: React.FC<AISuggestionCardProps> = ({
     onAccept,
     onDismiss,
 }) => {
+    const { isDark } = useThemeStore();
+    const colors = getColors(isDark);
+
     const getIcon = () => {
         switch (suggestion.type) {
             case 'energy':
@@ -31,10 +35,12 @@ export const AISuggestionCard: React.FC<AISuggestionCardProps> = ({
         }
     };
 
+    const styles = createStyles(colors);
+
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['rgba(124, 58, 237, 0.15)', 'rgba(8, 145, 178, 0.1)']}
+                colors={[colors.primaryGlow, colors.secondaryGlow]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradient}
@@ -78,12 +84,14 @@ export const AISuggestionCard: React.FC<AISuggestionCardProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof getColors>) => StyleSheet.create({
     container: {
         borderRadius: borderRadius.xl,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(124, 58, 237, 0.2)',
+        borderColor: colors.borderFocus,
+        marginTop: spacing.md,
+        backgroundColor: colors.card,
     },
     gradient: {
         padding: spacing.lg,
@@ -97,7 +105,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: borderRadius.md,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: spacing.md,

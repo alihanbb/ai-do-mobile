@@ -1,0 +1,47 @@
+/* Web-specific styles for mobile-like viewport */
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #0A0A0B;
+}
+
+/* Center the app with mobile dimensions */
+#root {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #1a1a2e;
+}
+
+/* Mobile frame container */
+#root > div {
+    width: 100%;
+    max-width: 430px; /* iPhone 14 Pro Max width */
+    min-height: 100vh;
+    max-height: 932px; /* iPhone 14 Pro Max height */
+    background-color: #0A0A0B;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    border-radius: 0;
+}
+
+/* On larger screens, add rounded corners and proper height */
+@media (min-width: 768px) {
+    #root > div {
+        min-height: 800px;
+        border-radius: 40px;
+        margin: 20px 0;
+    }
+}
+
+/* On mobile web, use full screen */
+@media (max-width: 430px) {
+    #root > div {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+}

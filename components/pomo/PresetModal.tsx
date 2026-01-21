@@ -11,13 +11,15 @@ import {
 import { X, Check } from 'lucide-react-native';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 import { useThemeStore } from '../../store/themeStore';
-import { TimerPreset, TimerMode, presetIcons } from '../../types/pomo';
+import { FocusPresetProps, PRESET_ICONS } from '../../src/features/focus/domain/entities/FocusPreset';
+import { FocusMode } from '../../src/features/focus/domain/entities/FocusSession';
+import { useTranslation } from 'react-i18next';
 
 interface PresetModalProps {
     visible: boolean;
     onClose: () => void;
-    onSave: (preset: TimerPreset) => void;
-    editPreset?: TimerPreset | null;
+    onSave: (preset: FocusPresetProps) => void;
+    editPreset?: FocusPresetProps | null;
 }
 
 export const PresetModal: React.FC<PresetModalProps> = ({
@@ -27,21 +29,24 @@ export const PresetModal: React.FC<PresetModalProps> = ({
     editPreset = null,
 }) => {
     const { isDark } = useThemeStore();
+    const { t } = useTranslation();
     const colors = getColors(isDark);
 
     const [name, setName] = useState(editPreset?.name || '');
     const [icon, setIcon] = useState(editPreset?.icon || '😊');
-    const [mode, setMode] = useState<TimerMode>(editPreset?.mode || 'pomo');
-    const [duration, setDuration] = useState(editPreset?.duration?.toString() || '25');
+    const [mode, setMode] = useState<FocusMode>(editPreset?.mode || 'pomodoro');
+    const [duration, setDuration] = useState(editPreset?.durationMinutes?.toString() || '25');
 
     const handleSave = () => {
-        const preset: TimerPreset = {
+        const preset: FocusPresetProps = {
             id: editPreset?.id || Date.now().toString(),
-            name: name || 'Zamanlayıcı',
+            name: name || t('pomo.modal.defaultName'),
             icon,
             mode,
-            duration: parseInt(duration) || 25,
-            color: '#7c3aed', // Default color
+            durationMinutes: parseInt(duration) || 25,
+            color: '#7c3aed',
+            isDefault: false,
+            sortOrder: 0,
         };
         onSave(preset);
         onClose();
@@ -64,7 +69,7 @@ export const PresetModal: React.FC<PresetModalProps> = ({
                             <X size={24} color={colors.textPrimary} />
                         </TouchableOpacity>
                         <Text style={styles.title}>
-                            Sık kullanılan zamanlayıcı e...
+                            {t('pomo.modal.title')}
                         </Text>
                         <TouchableOpacity onPress={handleSave}>
                             <Check size={24} color={colors.textPrimary} />
@@ -76,7 +81,7 @@ export const PresetModal: React.FC<PresetModalProps> = ({
                         <View style={styles.inputContainer}>
                             <TextInput
                                 style={styles.input}
-                                placeholder="İsim"
+                                placeholder={t('pomo.modal.name')}
                                 placeholderTextColor={colors.textMuted}
                                 value={name}
                                 onChangeText={setName}
@@ -85,9 +90,9 @@ export const PresetModal: React.FC<PresetModalProps> = ({
 
                         {/* Icon Selection */}
                         <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Simge</Text>
+                            <Text style={styles.sectionTitle}>{t('pomo.modal.icon')}</Text>
                             <View style={styles.iconGrid}>
-                                {presetIcons.map((emoji, index) => (
+                                {PRESET_ICONS.map((emoji, index) => (
                                     <TouchableOpacity
                                         key={index}
                                         style={[
@@ -104,18 +109,18 @@ export const PresetModal: React.FC<PresetModalProps> = ({
 
                         {/* Mode Selection */}
                         <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Süre ölçer modu</Text>
+                            <Text style={styles.sectionTitle}>{t('pomo.modal.mode')}</Text>
 
                             <TouchableOpacity
                                 style={styles.modeRow}
-                                onPress={() => setMode('pomo')}
+                                onPress={() => setMode('pomodoro')}
                             >
                                 <View style={styles.radioContainer}>
                                     <View style={[
                                         styles.radio,
-                                        mode === 'pomo' && styles.radioSelected,
+                                        mode === 'pomodoro' && styles.radioSelected,
                                     ]}>
-                                        {mode === 'pomo' && (
+                                        {mode === 'pomodoro' && (
                                             <View style={styles.radioInner} />
                                         )}
                                     </View>
@@ -127,9 +132,9 @@ export const PresetModal: React.FC<PresetModalProps> = ({
                                         value={duration}
                                         onChangeText={setDuration}
                                         keyboardType="numeric"
-                                        editable={mode === 'pomo'}
+                                        editable={mode === 'pomodoro'}
                                     />
-                                    <Text style={styles.durationLabel}>Dakika</Text>
+                                    <Text style={styles.durationLabel}>{t('time.minutes')}</Text>
                                 </View>
                             </TouchableOpacity>
 
@@ -146,7 +151,7 @@ export const PresetModal: React.FC<PresetModalProps> = ({
                                             <View style={styles.radioInner} />
                                         )}
                                     </View>
-                                    <Text style={styles.modeText}>Kronometre</Text>
+                                    <Text style={styles.modeText}>{t('pomo.stopwatch')}</Text>
                                 </View>
                             </TouchableOpacity>
                         </View>

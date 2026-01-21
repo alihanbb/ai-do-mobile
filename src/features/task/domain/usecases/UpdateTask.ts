@@ -1,7 +1,4 @@
-// src/features/task/domain/usecases/UpdateTask.ts
-// Use case for updating an existing task
-
-import { Task, TaskCategory, TaskPriority } from '../entities/Task';
+import { Task, TaskCategory, TaskPriority, TaskStatus } from '../entities/Task';
 import { ITaskRepository } from '../repositories/ITaskRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';
 
@@ -9,6 +6,7 @@ export interface UpdateTaskDTO {
     id: string;
     title?: string;
     description?: string;
+    status?: TaskStatus;
     completed?: boolean;
     dueDate?: Date | null;
     dueTime?: string;
@@ -22,7 +20,6 @@ export class UpdateTaskUseCase {
 
     async execute(dto: UpdateTaskDTO): Promise<Result<Task, Error>> {
         try {
-            // Get existing task
             const getResult = await this.taskRepository.getById(dto.id);
             if (getResult.isFailure) {
                 return Result.fail(getResult.error);
@@ -33,14 +30,16 @@ export class UpdateTaskUseCase {
                 return Result.fail(new Error('Task not found'));
             }
 
-            // Apply updates
             if (dto.title !== undefined) {
                 task.updateTitle(dto.title);
             }
             if (dto.description !== undefined) {
                 task.updateDescription(dto.description || undefined);
             }
-            if (dto.completed !== undefined) {
+            if (dto.status !== undefined) {
+                task.updateStatus(dto.status);
+            }
+            if (dto.completed !== undefined && dto.status === undefined) {
                 dto.completed ? task.complete() : task.uncomplete();
             }
             if (dto.dueDate !== undefined) {
@@ -53,7 +52,6 @@ export class UpdateTaskUseCase {
                 task.updatePriority(dto.priority);
             }
 
-            // Save to repository
             const updateResult = await this.taskRepository.update(task);
             if (updateResult.isFailure) {
                 return Result.fail(updateResult.error);

@@ -17,21 +17,34 @@ apiClient.interceptors.request.use(
     async (requestConfig: InternalAxiosRequestConfig) => {
         try {
             const token = await secureStorage.get<string>(TOKEN_KEY);
-            if (token && requestConfig.headers) {
-                requestConfig.headers.Authorization = `Bearer ${token}`;
+            if (token) {
+                console.log(`🔑 Found token (length: ${token.length})`);
+                if (requestConfig.headers) {
+                    requestConfig.headers.Authorization = `Bearer ${token}`;
+                }
+            } else {
+                console.log('⚠️ No token found in storage');
             }
+            console.log(`🌐 API Request: [${requestConfig.method?.toUpperCase()}] ${requestConfig.baseURL}${requestConfig.url}`);
+            console.log('Headers:', JSON.stringify(requestConfig.headers, null, 2));
+            console.log('Payload:', JSON.stringify(requestConfig.data, null, 2));
         } catch (error) {
             console.warn('Failed to get auth token:', error);
         }
         return requestConfig;
     },
     (error: unknown) => {
+        console.error('API Request Error:', error);
         return Promise.reject(error);
     }
 );
 
 apiClient.interceptors.response.use(
-    (response: import('axios').AxiosResponse) => response,
+    (response: import('axios').AxiosResponse) => {
+        console.log(`✅ API Response: [${response.status}] ${response.config.url}`);
+        console.log('Result Data:', JSON.stringify(response.data, null, 2));
+        return response;
+    },
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
         if (error.response?.status === 401 && !originalRequest._retry) {
@@ -42,7 +55,7 @@ apiClient.interceptors.response.use(
 
                 if (refreshToken) {
                     const refreshResponse = await axios.post(
-                        `${config.api.baseUrl}/auth/refresh-token`,
+                        `${config.api.baseUrl}auth/refresh`,
                         { refreshToken },
                         { headers: { 'Content-Type': 'application/json' } }
                     );

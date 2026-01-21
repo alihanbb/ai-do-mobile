@@ -35,3 +35,7 @@ export interface ApiErrorResponse {
         message: string;
     };
 }
+
+export interface ForgotPasswordRequest {
+    email: string;
+}

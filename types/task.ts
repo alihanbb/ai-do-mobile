@@ -5,6 +5,7 @@ export type {
     TaskProps as Task,
     TaskCategory,
     TaskPriority,
+    TaskStatus,
     Subtask,
     AISuggestion,
 } from '../src/features/task/domain/entities/Task';

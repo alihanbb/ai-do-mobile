@@ -7,6 +7,7 @@ import {
     Dimensions,
     Pressable,
     ScrollView,
+    Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -48,10 +49,10 @@ const slides: OnboardingSlide[] = [
     {
         id: '1',
         type: 'welcome',
-        icon: <Sparkles size={64} color={colors.textPrimary} />,
+        icon: <Image source={require('../../assets/icon.png')} style={{ width: 120, height: 120 }} resizeMode="contain" />,
         title: "AI-Do'ya Hoş Geldiniz",
         subtitle: 'Yapay zeka destekli akıllı görev yöneticisi',
-        gradient: [colors.primary, colors.primaryDark] as const,
+        gradient: ['transparent', 'transparent'] as const, // Gradyanı kaldırmak için transparent yaptım çünkü ikonun kendisi renkli
     },
     {
         id: '2',

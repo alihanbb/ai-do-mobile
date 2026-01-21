@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 import { useThemeStore } from '../../store/themeStore';
-import { TimerMode } from '../../types/pomo';
+import { FocusMode } from '../../src/features/focus/domain/entities/FocusSession';
 
 interface TimerTabsProps {
-    activeMode: TimerMode;
-    onModeChange: (mode: TimerMode) => void;
+    activeMode: FocusMode;
+    onModeChange: (mode: FocusMode) => void;
     disabled?: boolean;
 }
 
@@ -25,20 +25,20 @@ export const TimerTabs: React.FC<TimerTabsProps> = ({
             <TouchableOpacity
                 style={[
                     styles.tab,
-                    activeMode === 'pomo' && styles.tabActive,
+                    activeMode === 'pomodoro' && styles.tabActive,
                 ]}
-                onPress={() => onModeChange('pomo')}
+                onPress={() => onModeChange('pomodoro')}
                 disabled={disabled}
             >
                 <Text
                     style={[
                         styles.tabText,
-                        activeMode === 'pomo' && styles.tabTextActive,
+                        activeMode === 'pomodoro' && styles.tabTextActive,
                     ]}
                 >
                     Pomo
                 </Text>
-                {activeMode === 'pomo' && <View style={styles.indicator} />}
+                {activeMode === 'pomodoro' && <View style={styles.indicator} />}
             </TouchableOpacity>
 
             <TouchableOpacity

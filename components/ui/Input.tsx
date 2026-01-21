@@ -38,6 +38,8 @@ export const Input: React.FC<InputProps> = ({
                 <TextInput
                     style={[styles.input, icon ? styles.inputWithIcon : undefined]}
                     placeholderTextColor={colors.textMuted}
+                    autoCorrect={false}
+                    autoComplete='off'
                     {...props}
                 />
             </View>

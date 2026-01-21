@@ -7,6 +7,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     TouchableOpacity,
+    Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Sparkles, Mail, ArrowLeft, Send } from 'lucide-react-native';
+import { useAuthStore } from '../../src/features/auth/presentation/stores/useAuthStore';
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
@@ -33,11 +35,19 @@ export default function ForgotPasswordScreen() {
         setIsLoading(true);
         setError('');
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const success = await useAuthStore.getState().forgotPassword(email);
+
+            if (success) {
+                setIsSent(true);
+            } else {
+                setError(useAuthStore.getState().error || 'Bir hata oluştu');
+            }
+        } catch (err) {
+            setError('Beklenmeyen bir hata oluştu');
+        } finally {
             setIsLoading(false);
-            setIsSent(true);
-        }, 1500);
+        }
     };
 
     return (
@@ -63,16 +73,22 @@ export default function ForgotPasswordScreen() {
                 <View style={styles.content}>
                     {/* Logo */}
                     <View style={styles.logoContainer}>
-                        <LinearGradient
-                            colors={[colors.primary, colors.secondary]}
-                            style={styles.logo}
-                        >
-                            <Sparkles size={32} color={colors.textPrimary} />
-                        </LinearGradient>
+                        <Image
+                            source={require('../../assets/icon.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
                     </View>
 
                     {/* Reset Password Form */}
-                    <Card variant='default' padding='lg' style={styles.formCard}>
+                    <Card
+                        variant='default'
+                        padding='lg'
+                        style={[
+                            styles.formCard,
+                            { backgroundColor: colors.card, borderColor: colors.border }
+                        ]}
+                    >
                         {!isSent ? (
                             <>
                                 <Text style={styles.formTitle}>Şifremi Unuttum</Text>
@@ -177,12 +193,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.xxxl,
     },
-    logo: {
-        width: 72,
-        height: 72,
-        borderRadius: borderRadius.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
+    logoImage: {
+        width: 100,
+        height: 100,
     },
     formCard: {
         marginBottom: spacing.xl,

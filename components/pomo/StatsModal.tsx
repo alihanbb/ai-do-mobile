@@ -7,16 +7,21 @@ import {
     TouchableOpacity,
     ScrollView,
 } from 'react-native';
-import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { X, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 import { useThemeStore } from '../../store/themeStore';
-import { FocusStats } from '../../types/pomo';
+import { FocusStatsDTO, HourlyStatsDTO, TimelineEntryDTO } from '../../src/features/focus/application/dtos';
+import { HourlyBarChart } from './HourlyBarChart';
+import { WeeklyTimeline } from './WeeklyTimeline';
 
 interface StatsModalProps {
     visible: boolean;
     onClose: () => void;
-    stats: FocusStats;
+    stats: FocusStatsDTO;
+    hourlyData?: HourlyStatsDTO[];
+    timelineData?: TimelineEntryDTO[];
 }
 
 type TimeRange = 'Day' | 'Week' | 'Month' | 'Custom';
@@ -26,6 +31,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     visible,
     onClose,
     stats,
+    hourlyData = [],
+    timelineData = [],
 }) => {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
@@ -33,6 +40,57 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [trendRange, setTrendRange] = useState<TrendRange>('Week');
 
     const styles = createStyles(colors);
+
+    const generateSampleHourlyData = (): HourlyStatsDTO[] => {
+        const data: HourlyStatsDTO[] = [];
+        for (let hour = 0; hour < 24; hour++) {
+            let duration = 0;
+            if (hour >= 8 && hour <= 12) {
+                duration = Math.floor(Math.random() * 60) + 20;
+            } else if (hour >= 14 && hour <= 18) {
+                duration = Math.floor(Math.random() * 80) + 30;
+            } else if (hour >= 20 && hour <= 22) {
+                duration = Math.floor(Math.random() * 40) + 10;
+            }
+            data.push({ hour, focusMinutes: duration });
+        }
+        return data;
+    };
+
+    const generateSampleTimelineData = (): TimelineEntryDTO[] => {
+        const entries: TimelineEntryDTO[] = [];
+        const colors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b'];
+
+        for (let day = 0; day < 7; day++) {
+            if (Math.random() > 0.3) {
+                const startHour = 8 + Math.floor(Math.random() * 4);
+                const duration = 1 + Math.random() * 2;
+                entries.push({
+                    id: `sample-${day}-1`,
+                    dayOfWeek: day,
+                    startHour,
+                    endHour: startHour + duration,
+                    durationMinutes: duration * 60,
+                    presetName: 'Sample',
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                });
+            }
+            if (Math.random() > 0.5) {
+                const startHour = 14 + Math.floor(Math.random() * 4);
+                const duration = 0.5 + Math.random() * 1.5;
+                entries.push({
+                    id: `sample-${day}-2`,
+                    dayOfWeek: day,
+                    startHour,
+                    endHour: startHour + duration,
+                    durationMinutes: duration * 60,
+                    presetName: 'Sample',
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                });
+            }
+        }
+        return entries;
+    };
 
     const formatDuration = (minutes: number): string => {
         const hours = Math.floor(minutes / 60);
@@ -50,57 +108,87 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={onClose}>
+                    <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                         <X size={24} color={colors.textPrimary} />
                     </TouchableOpacity>
                     <Text style={styles.title}>Focus Statistics</Text>
-                    <TouchableOpacity>
-                        <ExternalLink size={24} color={colors.textPrimary} />
-                    </TouchableOpacity>
+                    <View style={{ width: 40 }} />
                 </View>
 
                 <ScrollView style={styles.body}>
-                    {/* Summary Cards */}
+                    {/* Summary Cards with Gradients */}
                     <View style={styles.summaryRow}>
-                        <View style={styles.summaryCard}>
-                            <Text style={styles.summaryLabel}>Today's Pomo</Text>
-                            <Text style={styles.summarySubLabel}>
-                                0 from yesterday <Text style={styles.upArrow}>↑</Text>
+                        <LinearGradient
+                            colors={[colors.primaryDark, colors.primary]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.summaryCard}
+                        >
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.summaryLabelWhite}>Today's Pomo</Text>
+                                <TrendingUp size={16} color="rgba(255,255,255,0.7)" />
+                            </View>
+                            <Text style={styles.summarySubLabelWhite}>
+                                0 from yesterday
                             </Text>
-                            <Text style={[styles.summaryValue, { color: colors.primary }]}>
+                            <Text style={styles.summaryValueWhite}>
                                 {stats.todayPomoCount ?? 0}
                             </Text>
-                        </View>
-                        <View style={styles.summaryCard}>
-                            <Text style={styles.summaryLabel}>Today's Focus (h)</Text>
-                            <Text style={styles.summarySubLabel}>
-                                0h0m from yesterday <Text style={styles.upArrow}>↑</Text>
+                        </LinearGradient>
+
+                        <LinearGradient
+                            colors={[colors.secondaryDark, colors.secondary]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.summaryCard}
+                        >
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.summaryLabelWhite}>Today's Focus</Text>
+                                <TrendingUp size={16} color="rgba(255,255,255,0.7)" />
+                            </View>
+                            <Text style={styles.summarySubLabelWhite}>
+                                0h0m from yesterday
                             </Text>
-                            <Text style={[styles.summaryValue, { color: colors.secondary }]}>
-                                {Math.floor((stats.todayFocusDuration ?? 0) / 60)}
-                                <Text style={styles.summaryUnit}>h </Text>
-                                {(stats.todayFocusDuration ?? 0) % 60}
-                                <Text style={styles.summaryUnit}>m</Text>
+                            <Text style={styles.summaryValueWhite}>
+                                {Math.floor((stats.todayFocusMinutes ?? 0) / 60)}
+                                <Text style={styles.summaryUnitWhite}>h </Text>
+                                {(stats.todayFocusMinutes ?? 0) % 60}
+                                <Text style={styles.summaryUnitWhite}>m</Text>
                             </Text>
-                        </View>
+                        </LinearGradient>
                     </View>
 
                     <View style={styles.summaryRow}>
-                        <View style={styles.summaryCard}>
-                            <Text style={styles.summaryLabel}>Total Pomo</Text>
-                            <Text style={[styles.summaryValue, { color: colors.primary }]}>
+                        <LinearGradient
+                            colors={[colors.accentDark, colors.accent]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.summaryCard}
+                        >
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.summaryLabelWhite}>Total Pomo</Text>
+                            </View>
+                            <Text style={styles.summaryValueWhite}>
                                 {stats.totalPomoCount ?? 0}
                             </Text>
-                        </View>
-                        <View style={styles.summaryCard}>
-                            <Text style={styles.summaryLabel}>Total Focus Duration</Text>
-                            <Text style={[styles.summaryValue, { color: colors.secondary }]}>
-                                {Math.floor((stats.totalFocusDuration ?? 0) / 60)}
-                                <Text style={styles.summaryUnit}>h </Text>
-                                {(stats.totalFocusDuration ?? 0) % 60}
-                                <Text style={styles.summaryUnit}>m</Text>
+                        </LinearGradient>
+
+                        <LinearGradient
+                            colors={['#d97706', '#f59e0b']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.summaryCard}
+                        >
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.summaryLabelWhite}>Total Focus</Text>
+                            </View>
+                            <Text style={styles.summaryValueWhite}>
+                                {Math.floor((stats.totalFocusMinutes ?? 0) / 60)}
+                                <Text style={styles.summaryUnitWhite}>h </Text>
+                                {(stats.totalFocusMinutes ?? 0) % 60}
+                                <Text style={styles.summaryUnitWhite}>m</Text>
                             </Text>
-                        </View>
+                        </LinearGradient>
                     </View>
 
                     {/* Focus Record */}
@@ -210,6 +298,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             ))}
                         </View>
                     </View>
+
+                    {/* Weekly Timeline */}
+                    <WeeklyTimeline
+                        data={timelineData.length > 0 ? timelineData : generateSampleTimelineData()}
+                    />
+
+                    {/* Hourly Bar Chart */}
+                    <HourlyBarChart
+                        data={hourlyData.length > 0 ? hourlyData : generateSampleHourlyData()}
+                    />
                 </ScrollView>
             </View>
         </Modal>
@@ -228,6 +326,10 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             alignItems: 'center',
             padding: spacing.lg,
             paddingTop: spacing.xxl,
+            backgroundColor: colors.background,
+        },
+        closeButton: {
+            padding: 4,
         },
         title: {
             fontSize: 18,
@@ -245,36 +347,53 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
         },
         summaryCard: {
             flex: 1,
-            backgroundColor: colors.surfaceSolid,
-            borderRadius: borderRadius.lg,
-            padding: spacing.lg,
+            borderRadius: borderRadius.xl,
+            padding: spacing.md,
+            minHeight: 110,
+            justifyContent: 'space-between',
+            // shadowColor: "#000",
+            // shadowOffset: { width: 0, height: 4 },
+            // shadowOpacity: 0.15,
+            // shadowRadius: 8,
+            // elevation: 4,
         },
-        summaryLabel: {
-            fontSize: 14,
-            color: colors.textSecondary,
-            marginBottom: spacing.xs,
+        cardHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
         },
-        summarySubLabel: {
+        summaryLabelWhite: {
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.9)',
+            fontWeight: '600',
+        },
+        summarySubLabelWhite: {
             fontSize: 11,
-            color: colors.textMuted,
-            marginBottom: spacing.sm,
+            color: 'rgba(255,255,255,0.7)',
+            marginTop: 4,
         },
-        upArrow: {
-            color: colors.success,
-        },
-        summaryValue: {
-            fontSize: 28,
+        summaryValueWhite: {
+            fontSize: 32,
             fontWeight: 'bold',
+            color: '#fff',
         },
-        summaryUnit: {
+        summaryUnitWhite: {
             fontSize: 16,
-            fontWeight: 'normal',
+            fontWeight: '500',
+            color: 'rgba(255,255,255,0.9)',
         },
         section: {
             backgroundColor: colors.surfaceSolid,
-            borderRadius: borderRadius.lg,
+            borderRadius: borderRadius.xl,
             padding: spacing.lg,
             marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            // shadowColor: "#000",
+            // shadowOffset: { width: 0, height: 2 },
+            // shadowOpacity: 0.05,
+            // shadowRadius: 4,
+            // elevation: 2,
         },
         sectionHeader: {
             flexDirection: 'row',
@@ -284,51 +403,89 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
         },
         sectionTitle: {
             fontSize: 16,
-            fontWeight: '600',
+            fontWeight: '700',
             color: colors.textPrimary,
+        },
+        addButtonContainer: {
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: colors.primary + '15',
+            alignItems: 'center',
+            justifyContent: 'center',
         },
         addButton: {
             fontSize: 24,
             color: colors.primary,
+            fontWeight: '600',
+            marginTop: -2,
         },
         dateNav: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: spacing.sm,
+            backgroundColor: colors.background,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
         },
         dateText: {
-            fontSize: 14,
+            fontSize: 13,
             color: colors.textSecondary,
+            fontWeight: '500',
         },
         tabRow: {
             flexDirection: 'row',
-            gap: spacing.sm,
+            gap: spacing.xs,
             marginBottom: spacing.lg,
+            backgroundColor: colors.background,
+            padding: 4,
+            borderRadius: 16,
         },
         tab: {
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-            borderRadius: borderRadius.full,
-            backgroundColor: 'transparent',
+            flex: 1,
+            paddingVertical: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 12,
         },
         tabActive: {
-            backgroundColor: colors.primary + '20',
+            backgroundColor: colors.surface,
+            // shadowColor: "#000",
+            // shadowOffset: { width: 0, height: 1 },
+            // shadowOpacity: 0.1,
+            // shadowRadius: 2,
+            // elevation: 1,
         },
         tabText: {
-            fontSize: 14,
+            fontSize: 13,
             color: colors.textMuted,
+            fontWeight: '500',
         },
         tabTextActive: {
-            color: colors.primary,
-            fontWeight: '600',
+            color: colors.textPrimary,
+            fontWeight: '700',
         },
         chartContainer: {
             alignItems: 'center',
             justifyContent: 'center',
             height: 200,
+            position: 'relative',
         },
         chartCenter: {
             position: 'absolute',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        chartCenterValue: {
+            fontSize: 32,
+            fontWeight: 'bold',
+            color: colors.textPrimary,
+        },
+        chartCenterLabel: {
+            fontSize: 14,
+            color: colors.textSecondary,
+            marginTop: -4,
         },
         noDataText: {
             fontSize: 16,
@@ -346,5 +503,8 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
         noneText: {
             fontSize: 14,
             color: colors.textMuted,
+            fontStyle: 'italic',
+            textAlign: 'center',
+            paddingVertical: 12,
         },
     });

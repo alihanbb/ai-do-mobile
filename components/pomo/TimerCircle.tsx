@@ -11,12 +11,12 @@ interface TimerCircleProps {
     isRunning?: boolean;
 }
 
-export const TimerCircle: React.FC<TimerCircleProps> = ({
+export const TimerCircle = React.memo(function TimerCircle({
     timeInSeconds,
     totalTimeInSeconds = 25 * 60,
     mode,
     isRunning = false,
-}) => {
+}: TimerCircleProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -110,7 +110,7 @@ export const TimerCircle: React.FC<TimerCircleProps> = ({
             </View>
         </View>
     );
-};
+});
 
 const createStyles = (colors: ReturnType<typeof getColors>, size: number) =>
     StyleSheet.create({

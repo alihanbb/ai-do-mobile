@@ -1,6 +1,3 @@
-// src/shared/utils/index.ts
-// Shared utility functions
-
 export const formatDate = (date: Date, locale = 'tr-TR'): string => {
     return date.toLocaleDateString(locale, {
         day: 'numeric',

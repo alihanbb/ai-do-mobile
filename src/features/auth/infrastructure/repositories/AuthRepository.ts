@@ -159,9 +159,20 @@ export class AuthRepository implements IAuthRepository {
         await this.storage.set(ONBOARDING_COMPLETE_KEY, true);
     }
 
-    // For testing purposes - reset onboarding
     async resetOnboarding(): Promise<void> {
         await this.storage.remove(ONBOARDING_COMPLETE_KEY);
+    }
+
+    async forgotPassword(email: string): Promise<Result<void, Error>> {
+        try {
+            const result = await identityApi.forgotPassword({ email });
+            if (!result.success) {
+                return Result.fail(new Error(result.error?.message || 'Password reset request failed'));
+            }
+            return Result.ok(undefined);
+        } catch (error) {
+            return Result.fail(error instanceof Error ? error : new Error('Password reset request failed'));
+        }
     }
 }
 

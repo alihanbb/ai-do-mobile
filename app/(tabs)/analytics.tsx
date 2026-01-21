@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 import { useTaskStore } from '../../store/taskStore';
@@ -18,6 +19,7 @@ type TabOption = 'day' | 'week' | 'trend';
 
 export default function AnalyticsScreen() {
     const { isDark } = useThemeStore();
+    const { t, i18n } = useTranslation();
     const colors = getColors(isDark);
     const { tasks } = useTaskStore();
 
@@ -34,9 +36,9 @@ export default function AnalyticsScreen() {
         const total = tasks.length || 1;
 
         return [
-            { label: 'Tamamlanan', percent: Math.round((completed / total) * 100), color: colors.success },
-            { label: 'Bekleyen', percent: Math.round((pending / total) * 100), color: colors.warning },
-            { label: 'Geciken', percent: 0, color: colors.error },
+            { label: t('tasks.completed'), percent: Math.round((completed / total) * 100), color: colors.success },
+            { label: t('tasks.pending'), percent: Math.round((pending / total) * 100), color: colors.secondary },
+            { label: t('tasks.overdue'), percent: 0, color: colors.error },
         ];
     }, [tasks, colors]);
 
@@ -75,8 +77,8 @@ export default function AnalyticsScreen() {
 
     // Focus metrics
     const focusMetrics = [
-        { icon: Target, value: '2s 35d', label: 'EN UZUN ODAK', iconColor: colors.primary },
-        { icon: Timer, value: '16d', label: 'KESİNTİSİZ', iconColor: colors.secondary },
+        { icon: Target, value: '2s 35d', label: i18n.language === 'en' ? 'LONGEST FOCUS' : 'EN UZUN ODAK', iconColor: colors.primary },
+        { icon: Timer, value: '16d', label: i18n.language === 'en' ? 'UNINTERRUPTED' : 'KESİNTİSİZ', iconColor: colors.secondary },
     ];
 
     // Streak calculation
@@ -119,7 +121,7 @@ export default function AnalyticsScreen() {
                 <TouchableOpacity style={styles.dateNavButton}>
                     <ChevronLeft size={20} color={colors.textPrimary} />
                 </TouchableOpacity>
-                <Text style={styles.dateTitle}>BUGÜN</Text>
+                <Text style={styles.dateTitle}>{t('time.today').toUpperCase()}</Text>
                 <View style={styles.dateNavButton} />
             </View>
 
@@ -136,15 +138,15 @@ export default function AnalyticsScreen() {
             <PeakHours peakTime="10:00 - 11:00" data={peakHoursData} />
 
             {/* Usage Breakdown */}
-            <UsageBreakdown data={usageData} title="Görev Durumu" />
+            <UsageBreakdown data={usageData} title={t('analytics.taskStatus')} />
 
             {/* Focus Metrics */}
-            <FocusMetrics metrics={focusMetrics} title="Odak" />
+            <FocusMetrics metrics={focusMetrics} title={t('pomo.focus')} />
 
             {/* Insight */}
             <InsightCard
-                title="Verimlilik ipucu"
-                description="Sabah saatlerinde daha verimlisin. Zor görevleri bu saatlere planlamayı dene."
+                title={t('analytics.productivityTip')}
+                description={t('analytics.morningTip')}
                 type="positive"
             />
         </>
@@ -157,23 +159,23 @@ export default function AnalyticsScreen() {
                 <TouchableOpacity style={styles.dateNavButton}>
                     <ChevronLeft size={20} color={colors.textPrimary} />
                 </TouchableOpacity>
-                <Text style={styles.dateTitle}>BU HAFTA</Text>
+                <Text style={styles.dateTitle}>{t('analytics.thisWeek').toUpperCase()}</Text>
                 <View style={styles.dateNavButton} />
             </View>
 
             {/* Usage Breakdown */}
-            <UsageBreakdown data={usageData} title="Haftalık Görev Durumu" />
+            <UsageBreakdown data={usageData} title={t('analytics.weeklyTaskStatus')} />
 
             {/* Top Categories */}
-            <TopCategories categories={topCategories} title="En çok tamamlanan kategoriler" />
+            <TopCategories categories={topCategories} title={t('analytics.topCategories')} />
 
             {/* Focus Metrics */}
-            <FocusMetrics metrics={focusMetrics} title="Haftalık Odak" />
+            <FocusMetrics metrics={focusMetrics} title={t('analytics.weeklyFocus')} />
 
             {/* Insight */}
             <InsightCard
-                title="Haftalık özet"
-                description={`Bu hafta ${completedTasks} görev tamamladın. Tebrikler!`}
+                title={t('analytics.weeklySummary')}
+                description={t('analytics.weeklySummaryDesc', { count: completedTasks })}
                 type={completedTasks > 5 ? 'positive' : 'neutral'}
             />
         </>
@@ -183,30 +185,29 @@ export default function AnalyticsScreen() {
         <>
             {/* Date Navigation */}
             <View style={styles.dateNav}>
-                <Text style={styles.dateTitle}>SON 1 AY</Text>
+                <Text style={styles.dateTitle}>{t('analytics.lastMonth').toUpperCase()}</Text>
             </View>
 
             {/* Hero Stat */}
             <HeroStatCard
                 value={`${completedTasks > 0 ? '+' : ''}${completedTasks}`}
-                label="BU DÖNEMDE"
+                label={t('analytics.thisPeriod').toUpperCase()}
                 changePercent={completionRate}
-                changeLabel="tamamlanma"
+                changeLabel={t('analytics.completion')}
                 isPositive={completedTasks > 0}
             />
 
             {/* Top Categories */}
-            <TopCategories categories={topCategories} title="En çok tamamlanan kategoriler" />
+            <TopCategories categories={topCategories} title={t('analytics.topCategories')} />
 
             {/* Usage Breakdown */}
-            <UsageBreakdown data={usageData} title="Aylık Durum" />
+            <UsageBreakdown data={usageData} title={t('analytics.monthlyStatus')} />
 
-            {/* Insight */}
             <InsightCard
-                title={completionRate >= 50 ? "Harika gidiyorsun!" : "Gelişim alanı"}
+                title={completionRate >= 50 ? t('analytics.greatJob') : t('analytics.improvementArea')}
                 description={completionRate >= 50
-                    ? `Görevlerinin %${completionRate}'sini tamamladın. Bu başarını korumaya devam et!`
-                    : "Daha fazla görev tamamlayarak verimliliğini artırabilirsin."}
+                    ? t('analytics.greatJobDesc', { rate: completionRate })
+                    : t('analytics.improvementAreaDesc')}
                 type={completionRate >= 50 ? 'positive' : 'neutral'}
             />
         </>
@@ -219,10 +220,10 @@ export default function AnalyticsScreen() {
                 <TouchableOpacity>
                     <Settings size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Analitikler</Text>
+                <Text style={styles.title}>{t('analytics.title')}</Text>
                 <View style={styles.headerDots}>
                     <View style={[styles.dot, { backgroundColor: colors.success }]} />
-                    <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                    <View style={[styles.dot, { backgroundColor: colors.secondary }]} />
                 </View>
             </View>
 

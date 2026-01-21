@@ -1,6 +1,3 @@
-// src/features/task/domain/usecases/GetTasks.ts
-// Use cases for retrieving tasks
-
 import { Task } from '../entities/Task';
 import { ITaskRepository, TaskFilter } from '../repositories/ITaskRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';

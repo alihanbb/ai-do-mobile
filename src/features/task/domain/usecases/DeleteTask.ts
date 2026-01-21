@@ -1,6 +1,3 @@
-// src/features/task/domain/usecases/DeleteTask.ts
-// Use case for deleting a task
-
 import { ITaskRepository } from '../repositories/ITaskRepository';
 import { Result } from '../../../../core/domain/value-objects/Result';
 

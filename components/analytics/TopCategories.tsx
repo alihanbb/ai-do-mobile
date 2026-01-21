@@ -28,10 +28,10 @@ const CATEGORY_LABELS: Record<TaskCategory, string> = {
     other: 'Diğer',
 };
 
-export const TopCategories: React.FC<TopCategoriesProps> = ({
+export const TopCategories = React.memo(function TopCategories({
     categories,
     title = 'En çok tamamlanan kategoriler'
-}) => {
+}: TopCategoriesProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -73,7 +73,7 @@ export const TopCategories: React.FC<TopCategoriesProps> = ({
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     wrapper: {

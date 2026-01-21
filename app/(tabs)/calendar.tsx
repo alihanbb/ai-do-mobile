@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -9,20 +9,18 @@ import {
     ScrollView,
     Platform,
     StatusBar,
+    Alert,
+    RefreshControl
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useTaskStore } from '../../store/taskStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
-import { Card } from '../../components/ui/Card';
-import { TaskCard } from '../../components/task/TaskCard';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react-native';
-
-const DAYS_OF_WEEK = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-const MONTHS = [
-    'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-];
+import { SwipeableTaskCard } from '../../components/task/SwipeableTaskCard';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, RefreshCw, Link as LinkIcon } from 'lucide-react-native';
+import { calendarApi } from '../../src/features/calendar/infrastructure/api/calendarApi';
+import { CalendarEventSummaryDto, DaySummaryDto } from '../../src/features/calendar/domain/types';
 
 interface DayData {
     day: number;
@@ -35,16 +33,66 @@ interface DayData {
 export default function CalendarScreen() {
     const router = useRouter();
     const { isDark } = useThemeStore();
+    const { t, i18n } = useTranslation();
     const colors = getColors(isDark);
     const { tasks, toggleComplete } = useTaskStore();
+
+    // Localized days and months
+    const DAYS_OF_WEEK = i18n.language === 'en'
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    const MONTHS = i18n.language === 'en'
+        ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+        : ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-    // Helper functions - defined before useMemo that uses them
+    // Remote events state
+    const [calendarEvents, setCalendarEvents] = useState<CalendarEventSummaryDto[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    // Fetch events for the current month
+    const fetchEvents = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Need to adjust month for API (1-12)
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+            const events = await calendarApi.getEventsByMonth(year, month);
+            setCalendarEvents(events);
+        } catch (error) {
+            console.error('Failed to fetch events:', error);
+            // Silent error or toast
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentDate]);
+
+    useEffect(() => {
+        fetchEvents();
+    }, [fetchEvents]);
+
+    // Handle sync
+    const handleSync = async () => {
+        setIsSyncing(true);
+        try {
+            await calendarApi.syncGoogle();
+            Alert.alert(t('common.success'), t('calendar.syncSuccess') || 'Calendar synced successfully');
+            fetchEvents();
+        } catch (error) {
+            console.error('Sync failed:', error);
+            Alert.alert(t('common.error'), t('calendar.syncFailed') || 'Sync failed');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    // Helper functions
     const getTaskCountForDate = (date: Date): number => {
-        return tasks.filter((task) => {
+        const localCount = tasks.filter((task) => {
             if (!task.dueDate) return false;
             const taskDate = new Date(task.dueDate);
             return (
@@ -53,16 +101,39 @@ export default function CalendarScreen() {
                 taskDate.getDate() === date.getDate()
             );
         }).length;
+
+        const remoteCount = calendarEvents.filter(event => {
+            const eventDate = new Date(event.startDateTime);
+            return (
+                eventDate.getFullYear() === date.getFullYear() &&
+                eventDate.getMonth() === date.getMonth() &&
+                eventDate.getDate() === date.getDate()
+            );
+        }).length;
+
+        return localCount + remoteCount;
     };
 
     const getTasksForDate = (date: Date) => {
-        return tasks.filter((task) => {
+        const dateTasks = tasks.filter((task) => {
             if (!task.dueDate) return false;
             const taskDate = new Date(task.dueDate);
             return (
                 taskDate.getFullYear() === date.getFullYear() &&
                 taskDate.getMonth() === date.getMonth() &&
                 taskDate.getDate() === date.getDate()
+            );
+        });
+        return dateTasks;
+    };
+
+    const getEventsForDate = (date: Date) => {
+        return calendarEvents.filter(event => {
+            const eventDate = new Date(event.startDateTime);
+            return (
+                eventDate.getFullYear() === date.getFullYear() &&
+                eventDate.getMonth() === date.getMonth() &&
+                eventDate.getDate() === date.getDate()
             );
         });
     };
@@ -124,7 +195,7 @@ export default function CalendarScreen() {
         }
 
         return days;
-    }, [currentDate, tasks]);
+    }, [currentDate, tasks, calendarEvents]);
 
     const navigateMonth = (direction: number) => {
         setCurrentDate((prev) => {
@@ -140,6 +211,7 @@ export default function CalendarScreen() {
     };
 
     const selectedDateTasks = selectedDate ? getTasksForDate(selectedDate) : [];
+    const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
 
     const styles = createStyles(colors);
 
@@ -147,13 +219,22 @@ export default function CalendarScreen() {
         <SafeAreaView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>Takvim</Text>
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => router.push('/task/create')}
-                >
-                    <Plus size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
+                <Text style={styles.title}>{t('calendar.title')}</Text>
+                <View style={styles.headerButtons}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleSync}
+                        disabled={isSyncing}
+                    >
+                        <RefreshCw size={20} color={isSyncing ? colors.textMuted : colors.textPrimary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => router.push('/task/create')}
+                    >
+                        <Plus size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Month Navigation */}
@@ -184,8 +265,12 @@ export default function CalendarScreen() {
                 ))}
             </View>
 
-            {/* Calendar Grid */}
-            <View style={styles.calendarGrid}>
+            <ScrollView
+                contentContainerStyle={styles.calendarGrid}
+                refreshControl={
+                    <RefreshControl refreshing={isLoading} onRefresh={fetchEvents} />
+                }
+            >
                 {calendarDays.map((dayData, index) => (
                     <TouchableOpacity
                         key={index}
@@ -223,7 +308,7 @@ export default function CalendarScreen() {
                         )}
                     </TouchableOpacity>
                 ))}
-            </View>
+            </ScrollView>
 
             {/* Day Tasks Modal */}
             <Modal
@@ -249,17 +334,17 @@ export default function CalendarScreen() {
                                 onPress={() => setModalVisible(false)}
                                 style={styles.closeButton}
                             >
-                                <Text style={styles.closeText}>Kapat</Text>
+                                <Text style={styles.closeText}>{t('common.close')}</Text>
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView style={styles.modalScroll}>
-                            {selectedDateTasks.length === 0 ? (
+                            {selectedDateTasks.length === 0 && selectedDateEvents.length === 0 ? (
                                 <View style={styles.emptyState}>
                                     <CalendarIcon size={48} color={colors.textMuted} />
-                                    <Text style={styles.emptyTitle}>Görev yok</Text>
+                                    <Text style={styles.emptyTitle}>{t('tasks.noTasks')}</Text>
                                     <Text style={styles.emptyText}>
-                                        Bu tarihte planlanmış görev bulunmuyor
+                                        {t('calendar.noEvents')}
                                     </Text>
                                     <TouchableOpacity
                                         style={styles.addTaskButton}
@@ -269,21 +354,57 @@ export default function CalendarScreen() {
                                         }}
                                     >
                                         <Plus size={18} color={colors.textPrimary} />
-                                        <Text style={styles.addTaskText}>Görev Ekle</Text>
+                                        <Text style={styles.addTaskText}>{t('tasks.addTask') || 'Görev Ekle'}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
-                                selectedDateTasks.map((task) => (
-                                    <TaskCard
-                                        key={task.id}
-                                        task={task}
-                                        onPress={() => {
-                                            setModalVisible(false);
-                                            router.push(`/task/${task.id}`);
-                                        }}
-                                        onToggleComplete={() => toggleComplete(task.id)}
-                                    />
-                                ))
+                                <>
+                                    {/* Remote Events */}
+                                    {selectedDateEvents.length > 0 && (
+                                        <View style={styles.sectionContainer}>
+                                            <Text style={styles.sectionTitle}>
+                                                {t('calendar.events') || 'Events'}
+                                            </Text>
+                                            {selectedDateEvents.map(event => (
+                                                <View key={event.id} style={styles.eventCard}>
+                                                    <View style={[styles.eventColorStrip, { backgroundColor: event.color || colors.secondary }]} />
+                                                    <View style={styles.eventContent}>
+                                                        <Text style={styles.eventTitle}>{event.title}</Text>
+                                                        <Text style={styles.eventTime}>
+                                                            {event.isAllDay
+                                                                ? (t('calendar.allDay') || 'All Day')
+                                                                : `${new Date(event.startDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(event.endDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )}
+
+                                    {/* Local Tasks */}
+                                    {selectedDateTasks.length > 0 && (
+                                        <View style={styles.sectionContainer}>
+                                            <Text style={styles.sectionTitle}>
+                                                {t('calendar.tasks') || 'Tasks'}
+                                            </Text>
+                                            {selectedDateTasks.map((task) => (
+                                                <SwipeableTaskCard
+                                                    key={task.id}
+                                                    task={task}
+                                                    onPress={() => {
+                                                        setModalVisible(false);
+                                                        router.push(`/task/${task.id}`);
+                                                    }}
+                                                    onToggleComplete={() => toggleComplete(task.id)}
+                                                    onDelete={() => {
+                                                        // Handle delete if needed or pass a dummy function if it's optional
+                                                        // Assuming delete integration isn't primary here or passed from parent store
+                                                    }}
+                                                />
+                                            ))}
+                                        </View>
+                                    )}
+                                </>
                             )}
                         </ScrollView>
                     </View>
@@ -307,6 +428,11 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             paddingTop: Platform.OS === 'android' ? spacing.lg + (StatusBar.currentHeight || 24) : spacing.lg,
             paddingBottom: spacing.md,
         },
+        headerButtons: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+        },
         title: {
             color: colors.textPrimary,
             fontSize: 28,
@@ -317,6 +443,14 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             height: 44,
             borderRadius: borderRadius.full,
             backgroundColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        actionButton: {
+            width: 44,
+            height: 44,
+            borderRadius: borderRadius.full,
+            backgroundColor: colors.surface,
             alignItems: 'center',
             justifyContent: 'center',
         },
@@ -468,4 +602,42 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             fontSize: 14,
             fontWeight: '600',
         },
+        sectionContainer: {
+            marginBottom: spacing.lg,
+        },
+        sectionTitle: {
+            color: colors.textMuted,
+            fontSize: 14,
+            fontWeight: '600',
+            marginBottom: spacing.sm,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+        },
+        eventCard: {
+            backgroundColor: colors.surface,
+            borderRadius: borderRadius.md,
+            marginBottom: spacing.sm,
+            flexDirection: 'row',
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: colors.border,
+        },
+        eventColorStrip: {
+            width: 4,
+            backgroundColor: colors.secondary,
+        },
+        eventContent: {
+            padding: spacing.md,
+            flex: 1,
+        },
+        eventTitle: {
+            color: colors.textPrimary,
+            fontSize: 16,
+            fontWeight: '600',
+            marginBottom: 4,
+        },
+        eventTime: {
+            color: colors.textMuted,
+            fontSize: 14,
+        }
     });

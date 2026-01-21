@@ -13,13 +13,19 @@ export type TaskCategory =
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'cancelled';
+
 export interface TaskProps {
     id: string;
     title: string;
     description?: string;
+    status: TaskStatus;
     completed: boolean;
+    completedAt?: Date;
+    startDate?: Date;
     dueDate?: Date;
     dueTime?: string;
+    allDay?: boolean;
     category?: TaskCategory;
     priority: TaskPriority;
     estimatedDuration?: number;
@@ -42,10 +48,14 @@ export class Task extends BaseEntity<TaskProps> {
     private _title: string;
     private _description?: string;
     private _completed: boolean;
+    private _completedAt?: Date;
+    private _startDate?: Date;
     private _dueDate?: Date;
     private _dueTime?: string;
+    private _allDay: boolean;
     private _category?: TaskCategory;
     private _priority: TaskPriority;
+    private _status: TaskStatus;
     private _estimatedDuration?: number;
     private _reminder?: Date;
     private _tags: string[];
@@ -58,10 +68,14 @@ export class Task extends BaseEntity<TaskProps> {
         this._title = props.title;
         this._description = props.description;
         this._completed = props.completed;
+        this._completedAt = props.completedAt;
+        this._startDate = props.startDate;
         this._dueDate = props.dueDate;
         this._dueTime = props.dueTime;
+        this._allDay = props.allDay ?? true;
         this._category = props.category;
         this._priority = props.priority;
+        this._status = props.status;
         this._estimatedDuration = props.estimatedDuration;
         this._reminder = props.reminder;
         this._tags = props.tags || [];
@@ -71,10 +85,11 @@ export class Task extends BaseEntity<TaskProps> {
     }
 
     // Factory methods
-    static create(props: Omit<TaskProps, 'id' | 'createdAt' | 'updatedAt' | 'completed'>): Task {
+    static create(props: Omit<TaskProps, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'status'>): Task {
         return new Task({
             ...props,
             id: new UniqueId().value,
+            status: 'todo',
             completed: false,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -84,6 +99,9 @@ export class Task extends BaseEntity<TaskProps> {
     static fromJSON(props: TaskProps): Task {
         return new Task({
             ...props,
+            status: props.status || 'todo',
+            completedAt: props.completedAt ? new Date(props.completedAt) : undefined,
+            startDate: props.startDate ? new Date(props.startDate) : undefined,
             dueDate: props.dueDate ? new Date(props.dueDate) : undefined,
             reminder: props.reminder ? new Date(props.reminder) : undefined,
             createdAt: new Date(props.createdAt),
@@ -95,10 +113,14 @@ export class Task extends BaseEntity<TaskProps> {
     get title(): string { return this._title; }
     get description(): string | undefined { return this._description; }
     get completed(): boolean { return this._completed; }
+    get completedAt(): Date | undefined { return this._completedAt; }
+    get startDate(): Date | undefined { return this._startDate; }
     get dueDate(): Date | undefined { return this._dueDate; }
     get dueTime(): string | undefined { return this._dueTime; }
+    get allDay(): boolean { return this._allDay; }
     get category(): TaskCategory | undefined { return this._category; }
     get priority(): TaskPriority { return this._priority; }
+    get status(): TaskStatus { return this._status; }
     get estimatedDuration(): number | undefined { return this._estimatedDuration; }
     get reminder(): Date | undefined { return this._reminder; }
     get tags(): string[] { return [...this._tags]; }
@@ -109,17 +131,24 @@ export class Task extends BaseEntity<TaskProps> {
     // Business logic methods
     complete(): void {
         this._completed = true;
+        this._completedAt = new Date();
+        this._status = 'done';
         this.touch();
     }
 
     uncomplete(): void {
         this._completed = false;
+        this._completedAt = undefined;
+        this._status = 'todo';
         this.touch();
     }
 
     toggleComplete(): void {
-        this._completed = !this._completed;
-        this.touch();
+        if (this._completed) {
+            this.uncomplete();
+        } else {
+            this.complete();
+        }
     }
 
     updateTitle(title: string): void {
@@ -137,6 +166,19 @@ export class Task extends BaseEntity<TaskProps> {
 
     updatePriority(priority: TaskPriority): void {
         this._priority = priority;
+        this.touch();
+    }
+
+    updateStatus(status: TaskStatus): void {
+        this._status = status;
+        // Sync completed field with status
+        if (status === 'done') {
+            this._completed = true;
+            this._completedAt = this._completedAt ?? new Date();
+        } else {
+            this._completed = false;
+            this._completedAt = undefined;
+        }
         this.touch();
     }
 
@@ -215,9 +257,13 @@ export class Task extends BaseEntity<TaskProps> {
             id: this._id,
             title: this._title,
             description: this._description,
+            status: this._status,
             completed: this._completed,
+            completedAt: this._completedAt,
+            startDate: this._startDate,
             dueDate: this._dueDate,
             dueTime: this._dueTime,
+            allDay: this._allDay,
             category: this._category,
             priority: this._priority,
             estimatedDuration: this._estimatedDuration,
@@ -244,24 +290,24 @@ export const categoryIcons: Record<TaskCategory, string> = {
     other: 'folder',
 };
 
-// Category colors mapping
+// Category colors mapping - NEON ENHANCED
 export const categoryColors: Record<TaskCategory, string> = {
-    work: '#3b82f6',
-    personal: '#8b5cf6',
-    health: '#22c55e',
-    education: '#f59e0b',
-    shopping: '#ec4899',
-    finance: '#14b8a6',
-    social: '#f97316',
-    other: '#6b7280',
+    work: '#00E5FF',      // Cyan Neon
+    personal: '#D900FF',  // Magenta Neon
+    health: '#00FF9D',    // Spring Green Neon
+    education: '#FFD600', // Yellow Neon
+    shopping: '#FF0055',  // Red-Pink Neon
+    finance: '#00FFA3',   // Mint Neon
+    social: '#FF6D00',    // Orange Neon
+    other: '#8E24AA',     // Purple Neon
 };
 
-// Priority colors mapping
+// Priority colors mapping - HAZARD LEVELS
 export const priorityColors: Record<TaskPriority, string> = {
-    low: '#6b7280',
-    medium: '#3b82f6',
-    high: '#f59e0b',
-    urgent: '#ef4444',
+    low: '#607D8B',       // Slate
+    medium: '#29B6F6',    // Light Blue
+    high: '#FF9100',      // Deep Orange
+    urgent: '#FF003C',    // Cyber Red
 };
 
 // AI Suggestion type

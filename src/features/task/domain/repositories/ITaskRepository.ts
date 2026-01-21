@@ -1,6 +1,3 @@
-// src/features/task/domain/repositories/ITaskRepository.ts
-// Task repository interface following repository pattern
-
 import { Task, TaskProps } from '../entities/Task';
 import { Result } from '../../../../core/domain/value-objects/Result';
 

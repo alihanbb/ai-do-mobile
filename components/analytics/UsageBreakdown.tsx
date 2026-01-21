@@ -12,10 +12,10 @@ interface UsageBreakdownProps {
     title?: string;
 }
 
-export const UsageBreakdown: React.FC<UsageBreakdownProps> = ({
+export const UsageBreakdown = React.memo(function UsageBreakdown({
     data,
     title = 'Kullanım'
-}) => {
+}: UsageBreakdownProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -55,7 +55,7 @@ export const UsageBreakdown: React.FC<UsageBreakdownProps> = ({
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

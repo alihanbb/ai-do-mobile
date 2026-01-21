@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 import { Flame, Trophy, Target } from 'lucide-react-native';
@@ -11,12 +12,13 @@ interface StreakCardProps {
     todayCompleted: boolean;
 }
 
-export const StreakCard: React.FC<StreakCardProps> = ({
+export const StreakCard = React.memo(function StreakCard({
     currentStreak,
     longestStreak,
     todayCompleted,
-}) => {
+}: StreakCardProps) {
     const { isDark } = useThemeStore();
+    const { i18n } = useTranslation();
     const colors = getColors(isDark);
 
     const styles = createStyles(colors);
@@ -36,7 +38,9 @@ export const StreakCard: React.FC<StreakCardProps> = ({
                         </View>
                         <View>
                             <Text style={styles.streakNumber}>{currentStreak}</Text>
-                            <Text style={styles.streakLabel}>Günlük Seri</Text>
+                            <Text style={styles.streakLabel}>
+                                {i18n.language === 'en' ? 'Daily Streak' : 'Günlük Seri'}
+                            </Text>
                         </View>
                     </View>
 
@@ -44,7 +48,9 @@ export const StreakCard: React.FC<StreakCardProps> = ({
                         <View style={styles.statItem}>
                             <Trophy size={18} color={colors.warningLight} />
                             <Text style={styles.statValue}>{longestStreak}</Text>
-                            <Text style={styles.statLabel}>En Uzun</Text>
+                            <Text style={styles.statLabel}>
+                                {i18n.language === 'en' ? 'Longest' : 'En Uzun'}
+                            </Text>
                         </View>
                         <View style={styles.divider} />
                         <View style={styles.statItem}>
@@ -52,20 +58,24 @@ export const StreakCard: React.FC<StreakCardProps> = ({
                             <Text style={[styles.statValue, todayCompleted && { color: colors.success }]}>
                                 {todayCompleted ? '✓' : '○'}
                             </Text>
-                            <Text style={styles.statLabel}>Bugün</Text>
+                            <Text style={styles.statLabel}>
+                                {i18n.language === 'en' ? 'Today' : 'Bugün'}
+                            </Text>
                         </View>
                     </View>
 
                     {!todayCompleted && (
                         <Text style={styles.motivationText}>
-                            Seriyi devam ettirmek için bugün bir görev tamamla!
+                            {i18n.language === 'en'
+                                ? 'Complete a task today to keep your streak!'
+                                : 'Seriyi devam ettirmek için bugün bir görev tamamla!'}
                         </Text>
                     )}
                 </View>
             </LinearGradient>
         </View>
     );
-};
+});
 
 const createStyles = (colors: ReturnType<typeof getColors>) =>
     StyleSheet.create({

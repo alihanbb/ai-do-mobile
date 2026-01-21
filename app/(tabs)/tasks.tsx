@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -8,284 +8,421 @@ import {
     Alert,
     Platform,
     StatusBar,
+    Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
+import Reanimated, { FadeInDown, FadeInUp, LayoutAnimationConfig } from 'react-native-reanimated';
 import { useThemeStore } from '../../store/themeStore';
-import { getColors, spacing, borderRadius } from '../../constants/colors';
+import { getColors, spacing, borderRadius, gradients } from '../../constants/colors';
 import { useTaskStore } from '../../store/taskStore';
 import { SwipeableTaskCard } from '../../components/task/SwipeableTaskCard';
-import { SearchBar, FilterModal } from '../../components/task/SearchBar';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { TaskCategory, TaskPriority } from '../../types/task';
-import { Plus, ListTodo, Search } from 'lucide-react-native';
+import {
+    Plus,
+    ListTodo,
+    CheckCircle2,
+    Clock,
+    TrendingUp,
+    AlertTriangle,
+    Zap,
+    Calendar,
+    Filter
+} from 'lucide-react-native';
+
+const { width } = Dimensions.get('window');
+
+type TabType = 'pending' | 'overdue' | 'completed';
 
 export default function TasksScreen() {
     const router = useRouter();
     const { isDark } = useThemeStore();
+    const { t } = useTranslation();
     const colors = getColors(isDark);
-    const { tasks, toggleComplete, deleteTask } = useTaskStore();
+    const { tasks, toggleComplete, deleteTask, initialize, refresh } = useTaskStore();
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filterModalVisible, setFilterModalVisible] = useState(false);
-    const [selectedCategories, setSelectedCategories] = useState<TaskCategory[]>([]);
-    const [selectedPriorities, setSelectedPriorities] = useState<TaskPriority[]>([]);
+    const [activeTab, setActiveTab] = useState<TabType>('pending');
 
-    // Filtered tasks
-    const filteredTasks = useMemo(() => {
-        return tasks.filter((task) => {
-            // Search filter
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
-                const matchesTitle = task.title.toLowerCase().includes(query);
-                const matchesDescription = task.description?.toLowerCase().includes(query);
-                if (!matchesTitle && !matchesDescription) return false;
-            }
+    // Initial load
+    useEffect(() => {
+        initialize();
+    }, []);
 
-            // Category filter
-            if (selectedCategories.length > 0) {
-                if (!task.category || !selectedCategories.includes(task.category)) {
-                    return false;
+    useFocusEffect(
+        useCallback(() => {
+            refresh();
+        }, [refresh])
+    );
+
+    // Filter Logic
+    const { pendingTasks, overdueTasks, completedTasks } = useMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        const pending: typeof tasks = [];
+        const overdue: typeof tasks = [];
+        const completed: typeof tasks = [];
+
+        tasks.forEach(task => {
+            if (task.completed) {
+                completed.push(task);
+            } else if (task.dueDate) {
+                let dueDate = new Date(task.dueDate);
+                dueDate.setHours(0, 0, 0, 0);
+                if (dueDate < now) {
+                    overdue.push(task);
+                } else {
+                    pending.push(task);
                 }
+            } else {
+                pending.push(task);
             }
-
-            // Priority filter
-            if (selectedPriorities.length > 0) {
-                if (!selectedPriorities.includes(task.priority)) {
-                    return false;
-                }
-            }
-
-            return true;
         });
-    }, [tasks, searchQuery, selectedCategories, selectedPriorities]);
+        return { pendingTasks: pending, overdueTasks: overdue, completedTasks: completed };
+    }, [tasks]);
 
-    const pendingTasks = filteredTasks.filter((t) => !t.completed);
-    const completedTasks = filteredTasks.filter((t) => t.completed);
+    const displayedTasks = useMemo(() => {
+        switch (activeTab) {
+            case 'pending': return pendingTasks;
+            case 'overdue': return overdueTasks;
+            case 'completed': return completedTasks;
+            default: return [];
+        }
+    }, [activeTab, pendingTasks, overdueTasks, completedTasks]);
 
-    const activeFilters = selectedCategories.length + selectedPriorities.length;
-
-    const handleCategoryToggle = (category: TaskCategory) => {
-        setSelectedCategories((prev) =>
-            prev.includes(category)
-                ? prev.filter((c) => c !== category)
-                : [...prev, category]
-        );
-    };
-
-    const handlePriorityToggle = (priority: TaskPriority) => {
-        setSelectedPriorities((prev) =>
-            prev.includes(priority)
-                ? prev.filter((p) => p !== priority)
-                : [...prev, priority]
-        );
-    };
-
-    const handleClearFilters = () => {
-        setSelectedCategories([]);
-        setSelectedPriorities([]);
-    };
+    const completionRate = tasks.length > 0
+        ? Math.round((completedTasks.length / tasks.length) * 100)
+        : 0;
 
     const handleDelete = (taskId: string, taskTitle: string) => {
         Alert.alert(
-            'Görevi Sil',
-            `"${taskTitle}" görevini silmek istediğinize emin misiniz?`,
+            t('tasks.deleteTask'),
+            `"${taskTitle}" ${t('tasks.deleteConfirm')}`,
             [
-                { text: 'İptal', style: 'cancel' },
-                {
-                    text: 'Sil',
-                    style: 'destructive',
-                    onPress: () => deleteTask(taskId),
-                },
+                { text: t('common.cancel'), style: 'cancel' },
+                { text: t('common.delete'), style: 'destructive', onPress: () => deleteTask(taskId) },
             ]
         );
     };
 
-    const styles = createStyles(colors);
+    const styles = createStyles(colors, isDark);
+
+    // Tab configuration with icons and colors
+    const tabConfig = {
+        pending: { icon: Clock, color: colors.secondary, label: t('tasks.pending') },
+        overdue: { icon: AlertTriangle, color: colors.error, label: t('tasks.overdue') },
+        completed: { icon: CheckCircle2, color: colors.success, label: t('tasks.completed') }
+    };
 
     return (
         <GestureHandlerRootView style={styles.container}>
-            <SafeAreaView style={styles.container}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.title}>Görevler</Text>
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={() => router.push('/task/create')}
-                    >
-                        <Plus size={24} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                </View>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-                {/* Search Bar */}
-                <SearchBar
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    onFilterPress={() => setFilterModalVisible(true)}
-                    activeFilters={activeFilters}
-                />
-
-                {/* Stats */}
-                <View style={styles.stats}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNumber}>{pendingTasks.length}</Text>
-                        <Text style={styles.statLabel}>Bekleyen</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={[styles.statNumber, { color: colors.success }]}>
-                            {completedTasks.length}
-                        </Text>
-                        <Text style={styles.statLabel}>Tamamlanan</Text>
-                    </View>
-                </View>
-
-                {/* Task List */}
+            <SafeAreaView style={styles.safeArea}>
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.content}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Pending Tasks */}
-                    {pendingTasks.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>
-                                Bekleyen ({pendingTasks.length})
-                            </Text>
-                            {pendingTasks.map((task) => (
-                                <SwipeableTaskCard
-                                    key={task.id}
-                                    task={task}
-                                    onPress={() => router.push(`/task/${task.id}`)}
-                                    onToggleComplete={() => toggleComplete(task.id)}
-                                    onDelete={() => handleDelete(task.id, task.title)}
-                                />
-                            ))}
+                    {/* Clean Header */}
+                    <Reanimated.View entering={FadeInDown.delay(100).duration(600)} style={styles.header}>
+                        <View>
+                            <Text style={styles.greeting}>{t('common.hello')} 👋</Text>
+                            <Text style={styles.title}>{t('tasks.myTasks')}</Text>
                         </View>
-                    )}
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => router.push('/task/create')}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.addBtnInner}>
+                                <Plus size={24} color="#FFFFFF" strokeWidth={2.5} />
+                            </View>
+                        </TouchableOpacity>
+                    </Reanimated.View>
 
-                    {/* Completed Tasks */}
-                    {completedTasks.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>
-                                Tamamlanan ({completedTasks.length})
-                            </Text>
-                            {completedTasks.map((task) => (
-                                <SwipeableTaskCard
-                                    key={task.id}
-                                    task={task}
-                                    onPress={() => router.push(`/task/${task.id}`)}
-                                    onToggleComplete={() => toggleComplete(task.id)}
-                                    onDelete={() => handleDelete(task.id, task.title)}
-                                />
-                            ))}
+                    {/* Quick Stats */}
+                    <Reanimated.View entering={FadeInDown.delay(150).duration(600)} style={styles.quickStats}>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: colors.secondary }]}>{pendingTasks.length}</Text>
+                            <Text style={styles.statText}>{t('tasks.pending')}</Text>
                         </View>
-                    )}
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: overdueTasks.length > 0 ? colors.error : colors.textMuted }]}>
+                                {overdueTasks.length}
+                            </Text>
+                            <Text style={styles.statText}>{t('tasks.overdue')}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: colors.success }]}>{completedTasks.length}</Text>
+                            <Text style={styles.statText}>{t('tasks.done')}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: colors.accent }]}>{completionRate}%</Text>
+                            <Text style={styles.statText}>{t('tasks.success')}</Text>
+                        </View>
+                    </Reanimated.View>
 
-                    {/* Empty State */}
-                    {filteredTasks.length === 0 && (
-                        <EmptyState
-                            icon={searchQuery || activeFilters > 0 ? Search : ListTodo}
-                            title={searchQuery || activeFilters > 0
-                                ? 'Görev bulunamadı'
-                                : 'Henüz görev yok'}
-                            description={searchQuery || activeFilters > 0
-                                ? 'Farklı bir arama veya filtre deneyin'
-                                : '+ butonuna tıklayarak yeni görev ekleyin'}
-                            actionLabel={searchQuery || activeFilters > 0 ? undefined : 'Görev Ekle'}
-                            onAction={searchQuery || activeFilters > 0 ? undefined : () => router.push('/task/create')}
-                            iconColor={colors.primary}
-                        />
-                    )}
+                    {/* Tab Switcher */}
+                    <Reanimated.View entering={FadeInDown.delay(200).duration(600)} style={styles.tabsWrapper}>
+                        {(['pending', 'overdue', 'completed'] as TabType[]).map((tab) => {
+                            const isActive = activeTab === tab;
+                            const config = tabConfig[tab];
+                            const TabIcon = config.icon;
+
+                            return (
+                                <TouchableOpacity
+                                    key={tab}
+                                    style={[
+                                        styles.tabItem,
+                                        isActive && { backgroundColor: config.color + '15' }
+                                    ]}
+                                    onPress={() => setActiveTab(tab)}
+                                    activeOpacity={0.7}
+                                >
+                                    <TabIcon
+                                        size={18}
+                                        color={isActive ? config.color : colors.textMuted}
+                                    />
+                                    <Text style={[
+                                        styles.tabText,
+                                        isActive && { color: config.color }
+                                    ]}>
+                                        {config.label}
+                                    </Text>
+                                    {isActive && (
+                                        <View style={[styles.tabIndicator, { backgroundColor: config.color }]} />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </Reanimated.View>
+
+                    {/* Task List */}
+                    <View style={styles.listContainer}>
+                        {displayedTasks.length > 0 ? (
+                            displayedTasks.map((task, index) => (
+                                <Reanimated.View
+                                    key={task.id}
+                                    entering={FadeInUp.delay(250 + (index * 30)).duration(400)}
+                                >
+                                    <SwipeableTaskCard
+                                        task={task}
+                                        onToggleComplete={() => toggleComplete(task.id)}
+                                        onDelete={() => handleDelete(task.id, task.title)}
+                                        onPress={() => router.push(`/task/${task.id}`)}
+                                    />
+                                </Reanimated.View>
+                            ))
+                        ) : (
+                            <Reanimated.View entering={FadeInUp.delay(300).duration(500)} style={styles.emptyContainer}>
+                                <View style={[styles.emptyIcon, { backgroundColor: tabConfig[activeTab].color + '15' }]}>
+                                    {activeTab === 'completed' ? (
+                                        <CheckCircle2 size={32} color={colors.success} />
+                                    ) : activeTab === 'overdue' ? (
+                                        <AlertTriangle size={32} color={colors.error} />
+                                    ) : (
+                                        <ListTodo size={32} color={colors.primary} />
+                                    )}
+                                </View>
+                                <Text style={styles.emptyTitle}>
+                                    {activeTab === 'completed'
+                                        ? t('tasks.noCompleted')
+                                        : activeTab === 'overdue'
+                                            ? t('tasks.noOverdue')
+                                            : t('tasks.noPending')}
+                                </Text>
+                                <Text style={styles.emptyDesc}>
+                                    {activeTab === 'completed'
+                                        ? t('tasks.completedWillShow')
+                                        : activeTab === 'overdue'
+                                            ? t('tasks.allOnTime')
+                                            : t('tasks.startAdding')}
+                                </Text>
+                                {activeTab === 'pending' && (
+                                    <TouchableOpacity
+                                        style={styles.emptyButton}
+                                        onPress={() => router.push('/task/create')}
+                                    >
+                                        <Plus size={18} color="#FFF" />
+                                        <Text style={styles.emptyButtonText}>{t('tasks.addTask')}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </Reanimated.View>
+                        )}
+                    </View>
                 </ScrollView>
-
-                {/* Filter Modal */}
-                <FilterModal
-                    visible={filterModalVisible}
-                    onClose={() => setFilterModalVisible(false)}
-                    selectedCategories={selectedCategories}
-                    selectedPriorities={selectedPriorities}
-                    onCategoryToggle={handleCategoryToggle}
-                    onPriorityToggle={handlePriorityToggle}
-                    onClearFilters={handleClearFilters}
-                />
             </SafeAreaView>
         </GestureHandlerRootView>
     );
 }
 
-const createStyles = (colors: ReturnType<typeof getColors>) =>
+const createStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) =>
     StyleSheet.create({
         container: {
             flex: 1,
             backgroundColor: colors.background,
         },
+        safeArea: {
+            flex: 1,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        content: {
+            paddingBottom: 120,
+            paddingTop: 8,
+        },
         header: {
+            paddingHorizontal: spacing.xl,
+            paddingTop: Platform.OS === 'android' ? 48 : 12,
+            marginBottom: spacing.xl,
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingHorizontal: spacing.lg,
-            paddingTop: Platform.OS === 'android' ? spacing.lg + (StatusBar.currentHeight || 24) : spacing.lg,
-            paddingBottom: spacing.md,
+        },
+        greeting: {
+            color: colors.textSecondary,
+            fontSize: 14,
+            fontWeight: '500',
+            marginBottom: 4,
         },
         title: {
             color: colors.textPrimary,
             fontSize: 28,
-            fontWeight: 'bold',
+            fontWeight: '700',
+            letterSpacing: -0.3,
         },
         addButton: {
-            width: 44,
-            height: 44,
-            borderRadius: borderRadius.full,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 6,
+        },
+        addBtnInner: {
+            width: 48,
+            height: 48,
+            borderRadius: 24,
             backgroundColor: colors.primary,
             alignItems: 'center',
             justifyContent: 'center',
         },
-        stats: {
+        // Quick Stats
+        quickStats: {
             flexDirection: 'row',
             marginHorizontal: spacing.lg,
-            marginBottom: spacing.lg,
-            padding: spacing.lg,
-            backgroundColor: colors.surfaceSolid,
+            marginBottom: spacing.xl,
+            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
             borderRadius: borderRadius.xl,
-            borderWidth: 1,
-            borderColor: colors.border,
+            padding: spacing.lg,
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3,
         },
         statItem: {
             flex: 1,
             alignItems: 'center',
         },
         statNumber: {
-            color: colors.textPrimary,
             fontSize: 24,
-            fontWeight: 'bold',
+            fontWeight: '700',
+            marginBottom: 2,
         },
-        statLabel: {
+        statText: {
             color: colors.textMuted,
-            fontSize: 12,
-            marginTop: spacing.xs,
+            fontSize: 11,
+            fontWeight: '500',
         },
         statDivider: {
             width: 1,
+            height: 32,
             backgroundColor: colors.border,
         },
-        scrollView: {
+        // Tab Switcher
+        tabsWrapper: {
+            flexDirection: 'row',
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.lg,
+            gap: 8,
+        },
+        tabItem: {
             flex: 1,
+            flexDirection: 'row',
+            paddingVertical: 12,
+            paddingHorizontal: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: borderRadius.lg,
+            gap: 6,
+            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
         },
-        content: {
-            padding: spacing.lg,
-            paddingTop: 0,
+        tabText: {
+            color: colors.textMuted,
+            fontSize: 12,
+            fontWeight: '600',
         },
-        section: {
-            marginBottom: spacing.xl,
+        tabIndicator: {
+            position: 'absolute',
+            bottom: 0,
+            left: '25%',
+            right: '25%',
+            height: 3,
+            borderRadius: 2,
         },
-        sectionTitle: {
-            color: colors.textSecondary,
+        // List
+        listContainer: {
+            paddingHorizontal: spacing.lg,
+        },
+        // Empty State
+        emptyContainer: {
+            alignItems: 'center',
+            paddingVertical: spacing.xxxl,
+            paddingHorizontal: spacing.xl,
+        },
+        emptyIcon: {
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.lg,
+        },
+        emptyTitle: {
+            color: colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+            marginBottom: spacing.sm,
+            textAlign: 'center',
+        },
+        emptyDesc: {
+            color: colors.textMuted,
+            fontSize: 14,
+            textAlign: 'center',
+            lineHeight: 20,
+            marginBottom: spacing.lg,
+        },
+        emptyButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: colors.primary,
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: borderRadius.lg,
+        },
+        emptyButtonText: {
+            color: '#FFFFFF',
             fontSize: 14,
             fontWeight: '600',
-            marginBottom: spacing.md,
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
         },
     });
+
 

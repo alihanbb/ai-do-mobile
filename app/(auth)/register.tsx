@@ -8,6 +8,7 @@ import {
     Platform,
     TouchableOpacity,
     ScrollView,
+    Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -82,18 +83,24 @@ export default function RegisterScreen() {
                     <View style={styles.content}>
                         {/* Logo */}
                         <View style={styles.logoContainer}>
-                            <LinearGradient
-                                colors={[colors.secondary, colors.primary]}
-                                style={styles.logo}
-                            >
-                                <Sparkles size={32} color={colors.textPrimary} />
-                            </LinearGradient>
+                            <Image
+                                source={require('../../assets/icon.png')}
+                                style={styles.logoImage}
+                                resizeMode="contain"
+                            />
                             <Text style={styles.appName}>AI-Do</Text>
                             <Text style={styles.tagline}>Yeni Hesap Oluştur</Text>
                         </View>
 
                         {/* Register Form */}
-                        <Card variant='default' padding='lg' style={styles.formCard}>
+                        <Card
+                            variant='default'
+                            padding='lg'
+                            style={[
+                                styles.formCard,
+                                { backgroundColor: colors.card, borderColor: colors.border }
+                            ]}
+                        >
                             <Text style={styles.formTitle}>Kayıt Ol</Text>
 
                             {error && <Text style={styles.errorText}>{error}</Text>}
@@ -203,12 +210,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing.xl,
     },
-    logo: {
-        width: 64,
-        height: 64,
-        borderRadius: borderRadius.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
+    logoImage: {
+        width: 90,
+        height: 90,
         marginBottom: spacing.md,
     },
     appName: {

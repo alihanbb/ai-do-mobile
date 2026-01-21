@@ -12,13 +12,13 @@ interface HeroStatCardProps {
     isPositive?: boolean;
 }
 
-export const HeroStatCard: React.FC<HeroStatCardProps> = ({
+export const HeroStatCard = React.memo(function HeroStatCard({
     value,
     label,
     changePercent,
     changeLabel,
     isPositive = true,
-}) => {
+}: HeroStatCardProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -40,7 +40,7 @@ export const HeroStatCard: React.FC<HeroStatCardProps> = ({
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

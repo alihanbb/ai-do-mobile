@@ -7,7 +7,7 @@ interface WeeklyChartProps {
     data: { day: string; completed: number; total: number }[];
 }
 
-export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data }) => {
+export const WeeklyChart = React.memo(function WeeklyChart({ data }: WeeklyChartProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -59,7 +59,7 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data }) => {
             </View>
         </View>
     );
-};
+});
 
 const createStyles = (colors: ReturnType<typeof getColors>) =>
     StyleSheet.create({

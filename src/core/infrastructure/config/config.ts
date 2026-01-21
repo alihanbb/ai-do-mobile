@@ -1,10 +1,16 @@
 import { Platform } from 'react-native';
+
 const getApiBaseUrl = (): string => {
     if (__DEV__) {
-        if (Platform.OS === 'android') {
-            return 'http://10.0.2.2:5000/api';
-        }
-        return 'http://localhost:5000/api';
+        // Local backend server - use your computer's IP address for physical devices
+        // Use 'localhost' or '127.0.0.1' for iOS Simulator
+        // Use '10.0.2.2' for Android Emulator  
+        // Use actual IP for real device on same network
+        return Platform.select({
+            ios: 'http://localhost:5208/api/',
+            android: 'http://192.168.1.101:5208/api/',
+            default: 'http://192.168.1.101:5208/api/'
+        });
     }
     return 'https://api.aido.app/api';
 };

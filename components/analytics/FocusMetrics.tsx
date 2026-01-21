@@ -16,10 +16,10 @@ interface FocusMetricsProps {
     title?: string;
 }
 
-export const FocusMetrics: React.FC<FocusMetricsProps> = ({
+export const FocusMetrics = React.memo(function FocusMetrics({
     metrics,
     title = 'Odak'
-}) => {
+}: FocusMetricsProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -53,7 +53,7 @@ export const FocusMetrics: React.FC<FocusMetricsProps> = ({
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     wrapper: {

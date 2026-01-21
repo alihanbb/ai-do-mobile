@@ -11,11 +11,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
-import { getColors, spacing, borderRadius } from '../../constants/colors';
+import { getColors, spacing, borderRadius, gradients } from '../../constants/colors';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
-import { TaskCard } from '../../components/task/TaskCard';
+import { SwipeableTaskCard } from '../../components/task/SwipeableTaskCard';
 import { AISuggestionCard } from '../../components/ai/AISuggestionCard';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -24,18 +25,29 @@ import { Plus, Mic, CheckCircle2, Sparkles } from 'lucide-react-native';
 export default function HomeScreen() {
     const router = useRouter();
     const { isDark } = useThemeStore();
+    const { t, i18n } = useTranslation();
     const colors = getColors(isDark);
-    const { tasks, suggestions, toggleComplete, dismissSuggestion } = useTaskStore();
+    const { tasks, suggestions, toggleComplete, dismissSuggestion, deleteTask } = useTaskStore();
     const { user } = useAuthStore();
 
-    const pendingTasks = tasks.filter((t) => !t.completed);
+    const isSameDay = (d1: Date, d2: Date) => {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    };
+
+    const pendingTasks = tasks.filter((t) => {
+        if (t.completed) return false;
+        if (!t.dueDate) return false;
+        return isSameDay(new Date(t.dueDate), new Date());
+    });
     const activeSuggestions = suggestions.filter((s) => !s.dismissed);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Günaydın';
-        if (hour < 18) return 'Merhabalar';
-        return 'İyi akşamlar';
+        if (hour < 12) return t('home.greeting.morning');
+        if (hour < 18) return t('home.greeting.afternoon');
+        return t('home.greeting.evening');
     };
 
     const styles = createStyles(colors);
@@ -57,7 +69,7 @@ export default function HomeScreen() {
                     <View>
                         <Text style={styles.greeting}>{getGreeting()} 👋</Text>
                         <Text style={styles.subtitle}>
-                            Bugün {pendingTasks.length} görevin var
+                            {t('home.taskCount', { count: pendingTasks.length })}
                         </Text>
                     </View>
                     <TouchableOpacity style={styles.avatar}>
@@ -85,24 +97,29 @@ export default function HomeScreen() {
 
                 {/* Today's Tasks */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Bugünkü Görevler</Text>
+                    <Text style={styles.sectionTitle}>
+                        {t('home.todayTasks')}
+                    </Text>
 
                     {pendingTasks.length === 0 ? (
                         <EmptyState
                             icon={CheckCircle2}
-                            title="Tebrikler! 🎉"
-                            description="Tüm görevlerini tamamladın. Yeni görev ekleyerek gününü planlamaya devam et."
-                            actionLabel="Görev Ekle"
+                            title={i18n.language === 'en' ? "Congratulations! 🎉" : "Tebrikler! 🎉"}
+                            description={i18n.language === 'en'
+                                ? "You've completed all your tasks. Add a new task to keep planning your day."
+                                : "Tüm görevlerini tamamladın. Yeni görev ekleyerek gününü planlamaya devam et."}
+                            actionLabel={t('tasks.addTask')}
                             onAction={() => router.push('/task/create')}
                             iconColor={colors.success}
                         />
                     ) : (
                         pendingTasks.slice(0, 5).map((task) => (
-                            <TaskCard
+                            <SwipeableTaskCard
                                 key={task.id}
                                 task={task}
                                 onPress={() => router.push(`/task/${task.id}`)}
                                 onToggleComplete={() => toggleComplete(task.id)}
+                                onDelete={() => deleteTask(task.id)}
                             />
                         ))
                     )}
@@ -113,7 +130,7 @@ export default function HomeScreen() {
                             onPress={() => router.push('/(tabs)/tasks')}
                         >
                             <Text style={styles.seeAllText}>
-                                Tümünü Gör ({pendingTasks.length})
+                                {t('home.seeAll')} ({pendingTasks.length})
                             </Text>
                         </TouchableOpacity>
                     )}
@@ -130,10 +147,10 @@ export default function HomeScreen() {
                     onPress={() => router.push('/task/create')}
                 >
                     <LinearGradient
-                        colors={[colors.primary, colors.primaryDark]}
+                        colors={gradients.primary}
                         style={styles.fabGradient}
                     >
-                        <Plus size={28} color={colors.textPrimary} />
+                        <Plus size={28} color="#FFFFFF" />
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -180,7 +197,7 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             justifyContent: 'center',
         },
         avatarText: {
-            color: colors.textPrimary,
+            color: '#FFFFFF',
             fontSize: 20,
             fontWeight: 'bold',
         },
@@ -224,6 +241,11 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             borderColor: colors.border,
             alignItems: 'center',
             justifyContent: 'center',
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 1,
+            shadowRadius: 8,
+            elevation: 4,
         },
         fab: {
             width: 60,

@@ -1,4 +1,3 @@
-// src/features/task/infrastructure/index.ts
-// Task infrastructure exports
-
 export * from './repositories/TaskRepository';
+export * from './api';
+export * from './mappers';

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
 
@@ -8,8 +9,9 @@ interface PeakHoursProps {
     data: number[]; // 24 hours data (0-23)
 }
 
-export const PeakHours: React.FC<PeakHoursProps> = ({ peakTime, data }) => {
+export const PeakHours = React.memo(function PeakHours({ peakTime, data }: PeakHoursProps) {
     const { isDark } = useThemeStore();
+    const { i18n } = useTranslation();
     const colors = getColors(isDark);
 
     const maxValue = Math.max(...data, 1);
@@ -18,7 +20,9 @@ export const PeakHours: React.FC<PeakHoursProps> = ({ peakTime, data }) => {
     return (
         <View style={[styles.container, { backgroundColor: colors.surfaceSolid, borderColor: colors.border }]}>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.textPrimary }]}>Yoğun saatler</Text>
+                <Text style={[styles.title, { color: colors.textPrimary }]}>
+                    {i18n.language === 'en' ? 'Peak Hours' : 'Yoğun saatler'}
+                </Text>
                 <Text style={[styles.peakTime, { color: colors.primary }]}>{peakTime}</Text>
             </View>
 
@@ -54,7 +58,7 @@ export const PeakHours: React.FC<PeakHoursProps> = ({ peakTime, data }) => {
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

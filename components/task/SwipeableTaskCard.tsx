@@ -1,246 +1,326 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    Animated,
     TouchableOpacity,
+    LayoutAnimation,
+    Platform,
+    UIManager,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Reanimated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Reanimated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { Task, categoryColors, priorityColors } from '../../types/task';
-import { colors, borderRadius, spacing } from '../../constants/colors';
-import { Badge } from '../ui/Badge';
-import { Card } from '../ui/Card';
-import { Check, Clock, Calendar, Trash2 } from 'lucide-react-native';
+import { getColors, borderRadius, spacing } from '../../constants/colors';
+import { useThemeStore } from '../../store/themeStore';
+import {
+    Check,
+    Clock,
+    Calendar,
+    Tag,
+    ChevronDown,
+    ChevronUp,
+    FileText,
+    ListChecks,
+    Bell,
+    Flame,
+    Zap,
+    AlertTriangle,
+    Sparkles,
+    Trash2,
+    Edit2
+} from 'lucide-react-native';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface SwipeableTaskCardProps {
     task: Task;
-    onPress: () => void;
+    onPress?: () => void;
     onToggleComplete: () => void;
     onDelete: () => void;
+    onToggleSubtask?: (subtaskId: string) => void;
 }
 
-function RightAction(prog: SharedValue<number>, drag: SharedValue<number>) {
-    const styleAnimation = useAnimatedStyle(() => {
-        return {
-            transform: [{ translateX: drag.value + 80 }],
-        };
-    });
-
-    return (
-        <Reanimated.View style={[styles.rightAction, styleAnimation]}>
-            <Trash2 size={24} color={colors.textPrimary} />
-            <Text style={styles.actionText}>Sil</Text>
-        </Reanimated.View>
-    );
-}
-
-function LeftAction(prog: SharedValue<number>, drag: SharedValue<number>) {
-    const styleAnimation = useAnimatedStyle(() => {
-        return {
-            transform: [{ translateX: drag.value - 80 }],
-        };
-    });
-
-    return (
-        <Reanimated.View style={[styles.leftAction, styleAnimation]}>
-            <Check size={24} color={colors.textPrimary} />
-            <Text style={styles.actionText}>Tamamla</Text>
-        </Reanimated.View>
-    );
-}
-
-export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
+export const SwipeableTaskCard = React.memo(function SwipeableTaskCard({
     task,
     onPress,
     onToggleComplete,
     onDelete,
-}) => {
-    const categoryColor = task.category ? categoryColors[task.category] : colors.textMuted;
+    onToggleSubtask,
+}: SwipeableTaskCardProps) {
+    // Styles setup
+    const { isDark } = useThemeStore();
+    const { t } = useTranslation();
+    const colors = getColors(isDark);
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Animated checkbox
+    const checkScale = useSharedValue(task.completed ? 1 : 0);
+    const styles = createStyles(colors, isDark);
+
+    useEffect(() => {
+        checkScale.value = withSpring(task.completed ? 1 : 0, { damping: 12 });
+    }, [task.completed]);
+
+    const categoryColor = task.category ? categoryColors[task.category] : colors.primary;
     const priorityColor = priorityColors[task.priority];
 
-    const formatDueTime = () => {
-        if (!task.dueTime) return null;
-        return task.dueTime;
+    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.completed;
+
+    const formatDate = (dateStr?: string | Date) => {
+        if (!dateStr) return null;
+        const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        if (date.toDateString() === today.toDateString()) return t('common.today') || 'Today'; // Assuming 'common.today' exists or fallback
+        if (date.toDateString() === tomorrow.toDateString()) return t('common.tomorrow') || 'Tomorrow';
+
+        const locale = t('locale') === 'tr' ? 'tr-TR' : 'en-US';
+        return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
     };
 
-    const formatDuration = () => {
-        if (!task.estimatedDuration) return null;
-        if (task.estimatedDuration >= 60) {
-            const hours = Math.floor(task.estimatedDuration / 60);
-            const mins = task.estimatedDuration % 60;
-            if (mins > 0) {
-                return hours + 's ' + mins + 'dk';
-            }
-            return hours + ' saat';
-        }
-        return task.estimatedDuration + 'dk';
+    const toggleExpand = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsExpanded(!isExpanded);
     };
 
-    const handleSwipeableOpen = (direction: 'left' | 'right') => {
-        if (direction === 'left') {
-            onDelete();
-        } else {
-            onToggleComplete();
-        }
-    };
+    const hasDetails = task.description || (task.subtasks && task.subtasks.length > 0) || (task.tags && task.tags.length > 0);
 
+    const checkAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: checkScale.value }],
+        opacity: checkScale.value,
+    }));
+
+    // Clean Design Structure
     return (
-        <ReanimatedSwipeable
-            containerStyle={styles.swipeableContainer}
-            friction={2}
-            enableTrackpadTwoFingerGesture
-            rightThreshold={40}
-            leftThreshold={40}
-            renderRightActions={RightAction}
-            renderLeftActions={LeftAction}
-            onSwipeableOpen={handleSwipeableOpen}
-        >
-            <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-                <Card variant="default" padding="md" style={styles.card}>
-                    <View style={styles.content}>
-                        <TouchableOpacity
-                            onPress={onToggleComplete}
+        <Reanimated.View style={styles.container}>
+            <TouchableOpacity
+                onPress={hasDetails ? toggleExpand : onPress}
+                activeOpacity={0.7}
+                style={[
+                    styles.card,
+                    {
+                        backgroundColor: isDark ? colors.surfaceSolid : colors.surface,
+                        borderColor: isOverdue ? colors.error : 'transparent',
+                        borderWidth: isOverdue ? 1 : 0
+                    }
+                ]}
+            >
+                {/* Left: Priority Indicator Bar */}
+                <View style={[styles.priorityIndicator, { backgroundColor: priorityColor }]} />
+
+                <View style={styles.content}>
+                    {/* Checkbox */}
+                    <TouchableOpacity
+                        onPress={onToggleComplete}
+                        style={[
+                            styles.checkbox,
+                            {
+                                borderColor: task.completed ? colors.success : colors.border,
+                                backgroundColor: task.completed ? colors.success + '20' : 'transparent'
+                            }
+                        ]}
+                    >
+                        {task.completed && (
+                            <Reanimated.View style={checkAnimatedStyle}>
+                                <Check size={14} color={colors.success} strokeWidth={3} />
+                            </Reanimated.View>
+                        )}
+                    </TouchableOpacity>
+
+                    {/* Main Info */}
+                    <View style={styles.textContainer}>
+                        <Text
                             style={[
-                                styles.checkbox,
-                                task.completed && styles.checkboxCompleted,
-                                { borderColor: task.completed ? colors.success : categoryColor },
+                                styles.title,
+                                { color: isOverdue ? colors.error : colors.textPrimary },
+                                task.completed && styles.titleCompleted
                             ]}
+                            numberOfLines={1}
                         >
-                            {task.completed && (
-                                <Check size={14} color={colors.textPrimary} strokeWidth={3} />
+                            {task.title}
+                        </Text>
+
+                        <View style={styles.metaRow}>
+                            {task.category && (
+                                <View style={[styles.badge, { backgroundColor: categoryColor + '15' }]}>
+                                    <Text style={[styles.badgeText, { color: categoryColor }]}>
+                                        {t(`categories.${task.category}`)}
+                                    </Text>
+                                </View>
                             )}
-                        </TouchableOpacity>
 
-                        <View style={styles.info}>
-                            <Text
-                                style={[
-                                    styles.title,
-                                    task.completed && styles.titleCompleted,
-                                ]}
-                                numberOfLines={1}
-                            >
-                                {task.title}
-                            </Text>
+                            {task.dueDate && (
+                                <View style={styles.metaItem}>
+                                    <Calendar size={12} color={isOverdue ? colors.error : colors.textMuted} />
+                                    <Text style={[styles.metaText, isOverdue && { color: colors.error }]}>
+                                        {formatDate(task.dueDate)}
+                                    </Text>
+                                </View>
+                            )}
 
-                            <View style={styles.meta}>
-                                {task.dueTime && (
-                                    <View style={styles.metaItem}>
-                                        <Clock size={12} color={colors.textMuted} />
-                                        <Text style={styles.metaText}>{formatDueTime()}</Text>
-                                    </View>
-                                )}
-                                {task.estimatedDuration && (
-                                    <View style={styles.metaItem}>
-                                        <Calendar size={12} color={colors.textMuted} />
-                                        <Text style={styles.metaText}>{formatDuration()}</Text>
-                                    </View>
-                                )}
-                            </View>
+                            {task.dueTime && (
+                                <View style={styles.metaItem}>
+                                    <Clock size={12} color={colors.textMuted} />
+                                    <Text style={styles.metaText}>{task.dueTime}</Text>
+                                </View>
+                            )}
                         </View>
-
-                        <View
-                            style={[
-                                styles.priorityIndicator,
-                                { backgroundColor: priorityColor },
-                            ]}
-                        />
                     </View>
 
-                    {task.category && (
-                        <View style={styles.badges}>
-                            <Badge
-                                label={task.category}
-                                variant="default"
-                            />
+                    {/* Right Action / Expand Icon */}
+                    {hasDetails && (
+                        <View style={styles.expandIcon}>
+                            {isExpanded ? <ChevronUp size={20} color={colors.textMuted} /> : <ChevronDown size={20} color={colors.textMuted} />}
                         </View>
                     )}
-                </Card>
-            </TouchableOpacity>
-        </ReanimatedSwipeable>
-    );
-};
+                </View>
 
-const styles = StyleSheet.create({
-    swipeableContainer: {
-        marginBottom: spacing.sm,
-    },
-    card: {
-        backgroundColor: colors.surfaceSolid,
-    },
-    content: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    checkbox: {
-        width: 24,
-        height: 24,
-        borderRadius: borderRadius.sm,
-        borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: spacing.md,
-    },
-    checkboxCompleted: {
-        backgroundColor: colors.success,
-        borderColor: colors.success,
-    },
-    info: {
-        flex: 1,
-    },
-    title: {
-        color: colors.textPrimary,
-        fontSize: 16,
-        fontWeight: '500',
-        marginBottom: spacing.xs,
-    },
-    titleCompleted: {
-        color: colors.textMuted,
-        textDecorationLine: 'line-through',
-    },
-    meta: {
-        flexDirection: 'row',
-        gap: spacing.md,
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-    },
-    metaText: {
-        color: colors.textMuted,
-        fontSize: 12,
-    },
-    priorityIndicator: {
-        width: 4,
-        height: 40,
-        borderRadius: 2,
-        marginLeft: spacing.md,
-    },
-    badges: {
-        flexDirection: 'row',
-        marginTop: spacing.sm,
-        gap: spacing.xs,
-    },
-    rightAction: {
-        width: 80,
-        backgroundColor: colors.error,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: borderRadius.lg,
-    },
-    leftAction: {
-        width: 80,
-        backgroundColor: colors.success,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: borderRadius.lg,
-    },
-    actionText: {
-        color: colors.textPrimary,
-        fontSize: 12,
-        marginTop: spacing.xs,
-    },
+                {/* Expanded Details */}
+                {isExpanded && (
+                    <View style={[styles.details, { borderTopColor: colors.border }]}>
+                        {task.description && (
+                            <Text style={[styles.description, { color: colors.textSecondary }]}>
+                                {task.description}
+                            </Text>
+                        )}
+
+                        {/* Subtasks would go here */}
+
+                        <View style={styles.actions}>
+                            <TouchableOpacity onPress={onPress} style={styles.actionBtn}>
+                                <Edit2 size={16} color={colors.primary} />
+                                <Text style={[styles.actionText, { color: colors.primary }]}>{t('common.edit') || 'Edit'}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={onDelete} style={styles.actionBtn}>
+                                <Trash2 size={16} color={colors.error} />
+                                <Text style={[styles.actionText, { color: colors.error }]}>{t('common.delete') || 'Delete'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+            </TouchableOpacity>
+        </Reanimated.View>
+    );
+}, (prevProps, nextProps) => {
+    return prevProps.task.id === nextProps.task.id &&
+        prevProps.task.completed === nextProps.task.completed &&
+        prevProps.task.title === nextProps.task.title &&
+        prevProps.task.priority === nextProps.task.priority &&
+        prevProps.task.category === nextProps.task.category &&
+        prevProps.task.dueDate === nextProps.task.dueDate;
 });
+
+const createStyles = (colors: ReturnType<typeof getColors>, isDark: boolean) =>
+    StyleSheet.create({
+        container: {
+            marginVertical: 6,
+            marginHorizontal: 2,
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: isDark ? 0.3 : 0.05,
+            shadowRadius: 8,
+            elevation: 3,
+        },
+        card: {
+            borderRadius: 16,
+            overflow: 'hidden',
+        },
+        content: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            padding: 12,
+        },
+        priorityIndicator: {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+        },
+        checkbox: {
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            borderWidth: 2,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 12,
+            marginLeft: 8,
+        },
+        textContainer: {
+            flex: 1,
+            justifyContent: 'center',
+        },
+        title: {
+            fontSize: 16,
+            fontWeight: '600',
+            marginBottom: 6,
+        },
+        titleCompleted: {
+            textDecorationLine: 'line-through',
+            opacity: 0.6,
+        },
+        metaRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10,
+        },
+        badge: {
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 6,
+        },
+        badgeText: {
+            fontSize: 11,
+            fontWeight: '600',
+            textTransform: 'uppercase',
+        },
+        metaItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+        },
+        metaText: {
+            color: colors.textMuted,
+            fontSize: 12,
+        },
+        expandIcon: {
+            padding: 4,
+        },
+        details: {
+            padding: 16,
+            paddingTop: 0,
+            borderTopWidth: 1,
+            marginTop: 4,
+        },
+        description: {
+            fontSize: 14,
+            lineHeight: 20,
+            marginTop: 12,
+            marginBottom: 16,
+        },
+        actions: {
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            gap: 16,
+        },
+        actionBtn: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            padding: 4,
+        },
+        actionText: {
+            fontSize: 12,
+            fontWeight: '600',
+        }
+    });

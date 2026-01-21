@@ -19,7 +19,7 @@ const CATEGORY_LABELS: Record<TaskCategory, string> = {
     other: 'Diğer',
 };
 
-export const CategoryChart: React.FC<CategoryChartProps> = ({ data }) => {
+export const CategoryChart = React.memo(function CategoryChart({ data }: CategoryChartProps) {
     const { isDark } = useThemeStore();
     const colors = getColors(isDark);
 
@@ -78,7 +78,7 @@ export const CategoryChart: React.FC<CategoryChartProps> = ({ data }) => {
             </View>
         </View>
     );
-};
+});
 
 const createStyles = (colors: ReturnType<typeof getColors>) =>
     StyleSheet.create({

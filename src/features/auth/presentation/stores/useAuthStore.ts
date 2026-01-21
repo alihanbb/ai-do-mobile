@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { UserProps } from '../../domain/entities/User';
 import { authRepository, AuthRepository } from '../../infrastructure/repositories/AuthRepository';
 import { LoginUseCase, RegisterUseCase, LogoutUseCase } from '../../domain/usecases';
+import { sentryService } from '../../../../core/infrastructure/monitoring/sentryService';
 
 // Create use cases
 const loginUseCase = new LoginUseCase(authRepository);
@@ -26,7 +27,9 @@ interface AuthState {
     register: (name: string, email: string, password: string) => Promise<boolean>;
     logout: () => Promise<void>;
     setUser: (user: UserProps) => void;
+    updateUser: (updates: Partial<UserProps>) => void;
     completeOnboarding: () => Promise<void>;
+    forgotPassword: (email: string) => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -46,8 +49,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             if (tokensResult.isSuccess && tokensResult.value &&
                 userResult.isSuccess && userResult.value) {
+                const userData = userResult.value.toJSON();
+
+                // Set Sentry user context for crash reporting
+                sentryService.setUser({
+                    id: userData.id,
+                    email: userData.email,
+                    username: userData.name,
+                });
+
                 set({
-                    user: userResult.value.toJSON(),
+                    user: userData,
                     token: tokensResult.value.accessToken,
                     isAuthenticated: true,
                     isInitialized: true,
@@ -72,8 +84,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (result.isSuccess) {
             const { user, tokens } = result.value;
+            const userData = user.toJSON();
+
+            // Set Sentry user context for crash reporting
+            sentryService.setUser({
+                id: userData.id,
+                email: userData.email,
+                username: userData.name,
+            });
+
             set({
-                user: user.toJSON(),
+                user: userData,
                 token: tokens.accessToken,
                 isAuthenticated: true,
                 isLoading: false,
@@ -92,8 +113,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (result.isSuccess) {
             const { user, tokens } = result.value;
+            const userData = user.toJSON();
+
+            // Set Sentry user context for crash reporting
+            sentryService.setUser({
+                id: userData.id,
+                email: userData.email,
+                username: userData.name,
+            });
+
             set({
-                user: user.toJSON(),
+                user: userData,
                 token: tokens.accessToken,
                 isAuthenticated: true,
                 isLoading: false,
@@ -107,6 +137,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     logout: async () => {
         await logoutUseCase.execute();
+
+        // Clear Sentry user context on logout
+        sentryService.setUser(null);
+
         set({
             user: null,
             token: null,
@@ -116,14 +150,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     setUser: (user: UserProps) => set({ user }),
 
+    updateUser: (updates: Partial<UserProps>) => {
+        const currentUser = get().user;
+        if (currentUser) {
+            set({ user: { ...currentUser, ...updates } });
+        }
+    },
+
     completeOnboarding: async () => {
         await authRepository.setOnboardingComplete();
         set({ isOnboardingComplete: true });
     },
 
-    // For testing - reset onboarding to see new pages
     resetOnboarding: async () => {
         await authRepository.resetOnboarding();
         set({ isOnboardingComplete: false });
+    },
+
+    forgotPassword: async (email: string) => {
+        set({ isLoading: true, error: null });
+        const result = await authRepository.forgotPassword(email);
+        set({ isLoading: false });
+
+        if (result.isSuccess) {
+            return true;
+        } else {
+            set({ error: result.error.message });
+            return false;
+        }
     },
 }));
