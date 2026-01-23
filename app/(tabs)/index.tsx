@@ -16,11 +16,11 @@ import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius, gradients } from '../../constants/colors';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
-import { SwipeableTaskCard } from '../../components/task/SwipeableTaskCard';
-import { AISuggestionCard } from '../../components/ai/AISuggestionCard';
-import { Card } from '../../components/ui/Card';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { Plus, Mic, CheckCircle2, Sparkles } from 'lucide-react-native';
+import { SwipeableTaskCard } from '../../src/features/task/components/SwipeableTaskCard';
+import { AISuggestionCard } from '../../src/components/ai/AISuggestionCard';
+import { Card } from '../../src/components/ui/Card';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { Plus, Mic, CheckCircle2, Sparkles, Bell } from 'lucide-react-native';
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -72,11 +72,22 @@ export default function HomeScreen() {
                             {t('home.taskCount', { count: pendingTasks.length })}
                         </Text>
                     </View>
-                    <TouchableOpacity style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                            {user?.name?.charAt(0) || 'A'}
-                        </Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <TouchableOpacity
+                            style={styles.iconButton}
+                            onPress={() => router.push('/notifications')}
+                        >
+                            <Bell size={24} color={colors.textPrimary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.avatar}
+                            onPress={() => router.push('/(tabs)/profile')}
+                        >
+                            <Text style={styles.avatarText}>
+                                {user?.name?.charAt(0) || 'A'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* AI Suggestions */}
@@ -263,6 +274,16 @@ const createStyles = (colors: ReturnType<typeof getColors>) =>
             height: '100%',
             alignItems: 'center',
             justifyContent: 'center',
+        },
+        iconButton: {
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: borderRadius.full,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
         },
     });
 

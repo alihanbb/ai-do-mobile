@@ -18,8 +18,8 @@ import Reanimated, { FadeInDown, FadeInUp, LayoutAnimationConfig } from 'react-n
 import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius, gradients } from '../../constants/colors';
 import { useTaskStore } from '../../store/taskStore';
-import { SwipeableTaskCard } from '../../components/task/SwipeableTaskCard';
-import { EmptyState } from '../../components/ui/EmptyState';
+import { SwipeableTaskCard } from '../../src/features/task/components/SwipeableTaskCard';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 import {
     Plus,
     ListTodo,

@@ -51,6 +51,7 @@
         "lightMode": "Light Mode",
         "appTheme": "App theme",
         "notifications": "Notifications",
+        "notificationSettings": "Notification Settings",
         "notificationsOn": "On",
         "notificationsOff": "Off",
         "language": "Language",
@@ -64,6 +65,12 @@
         "helpSupport": "Help & Support",
         "privacyPolicy": "Privacy Policy",
         "appSettings": "App Settings",
+        "supportAndLegal": "Support & Legal",
+        "termsOfService": "Terms of Service",
+        "about": "About",
+        "app": "App",
+        "rateUs": "Rate Us",
+        "shareApp": "Share App",
         "other": "Other",
         "version": "AI-Do v1.0.0",
         "enterNameError": "Please enter your name",
@@ -215,7 +222,76 @@
         "todayTasks": "Today's Tasks",
         "seeAll": "See All"
     },
-    "time": {
-        "minutes": "minutes"
+    "notifications": {
+        "title": "Notifications",
+        "settings": "Notification Settings",
+        "general": "GENERAL",
+        "channels": "CHANNELS",
+        "allowNotifications": "All Notifications",
+        "allowNotificationsHint": "Enable notifications for this app",
+        "pushNotifications": "Push Notifications",
+        "pushHint": "Reminders, alerts, and instant updates",
+        "emailNotifications": "Email Notifications",
+        "emailHint": "Weekly digests, newsletters, and account activity",
+        "info": "You can customize your notification preferences here. Disabling the main notification permission will disable all channels.",
+        "emptyTitle": "No Notifications",
+        "emptyText": "You don't have any new notifications yet. Important reminders will appear here.",
+        "filterEmpty": "No notifications found in this category.",
+        "noResults": "No results found"
+    },
+    "workingHours": {
+        "title": "Working Hours",
+        "description": "Set your daily working hours to optimize notification delivery and productivity reports.",
+        "start": "Start",
+        "end": "End",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "updateSuccess": "Working hours updated",
+        "updateError": "Failed to update working hours"
+    },
+    "legal": {
+        "privacyPolicy": {
+            "title": "Privacy Policy",
+            "lastUpdated": "Last Updated: January 24, 2025",
+            "content": "This Privacy Policy describes how your information is collected, used, and shared when you use AI-Do ('we', 'our', or 'us').\n\n1. Information We Collect\nWe may collect the following types of information:\n- Account Information: Your name, email address, and profile photo.\n- Usage Data: Statistics and data on how you use the app.\n- Device Information: Device model, OS version, and unique device identifiers.\n\n2. How We Use Your Information\nWe use the information we collect to:\n- Provide and maintain our services.\n- Manage your account.\n- Send you notifications and updates.\n- Improve and analyze our application.\n\n3. Data Security\nWe implement industry-standard security measures to ensure the safety of your data. However, please note that no method of transmission over the internet is 100% secure.\n\n4. Contact Us\nIf you have any questions about this Privacy Policy, please contact us."
+        },
+        "termsOfService": {
+            "title": "Terms of Service",
+            "lastUpdated": "Last Updated: January 24, 2025",
+            "content": "Welcome to AI-Do. By using our application, you agree to the following terms.\n\n1. Account Usage\nYou are responsible for the security of your account and all activities that occur under it. You must keep your password confidential and notify us of any unauthorized access.\n\n2. Usage Rules\nYou may not use the application for any illegal or unauthorized purpose. You may not interfere with or disrupt the service or servers.\n\n3. Intellectual Property\nThe application and its original content, features, and functionality are owned by AI-Do and are protected by copyright laws.\n\n4. Termination\nWe reserve the right to suspend or terminate your account without prior notice if you violate our terms.\n\n5. Changes\nWe reserve the right to update these terms from time to time. Changes will be effective immediately upon posting."
+        }
+    },
+    "about": {
+        "title": "About App",
+        "description": "AI-Do is an AI-powered smart task management and productivity assistant. It helps you optimize your daily plans, stay focused, and achieve your goals.",
+        "version": "Version",
+        "developer": "Developer",
+        "website": "Website",
+        "contact": "Contact",
+        "contactEmail": "support@aido.app",
+        "websiteUrl": "www.aido.app"
+    },
+    "help": {
+        "title": "Help Center",
+        "faq": "Frequently Asked Questions",
+        "contactSupport": "Contact Support",
+        "questions": [
+            {
+                "q": "How can I sync my tasks?",
+                "a": "Your tasks are automatically synced with our cloud servers when you have an internet connection. Pull down on the home screen to refresh manually."
+            },
+            {
+                "q": "How can I turn off notifications?",
+                "a": "You can manage your notification preferences from Profile > Settings > Notifications."
+            },
+            {
+                "q": "Can I delete my account?",
+                "a": "Yes, you can request account deletion via our support team or the 'Delete Account' option in Profile settings (if available)."
+            },
+            {
+                "q": "What are Premium features?",
+                "a": "Premium membership gives you unlimited AI suggestions, advanced statistics, and an ad-free experience."
+            }
+        ]
     }
 }

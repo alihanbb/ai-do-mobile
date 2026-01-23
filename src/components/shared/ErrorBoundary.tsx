@@ -10,6 +10,7 @@ import {
     Image,
 } from 'react-native';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react-native';
+import { sentryService } from '../../../src/core/infrastructure/monitoring/sentryService';
 
 interface Props {
     children: ReactNode;
@@ -36,9 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
         console.error('ErrorBoundary caught an error:', error, errorInfo);
 
         // Report to error tracking service (e.g., Sentry)
-        // if (!__DEV__) {
-        //     Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
-        // }
+        sentryService.captureException(error, { componentStack: errorInfo.componentStack });
 
         // Call custom error handler if provided
         this.props.onError?.(error, errorInfo);

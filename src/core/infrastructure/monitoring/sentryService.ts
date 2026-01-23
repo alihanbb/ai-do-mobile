@@ -3,6 +3,8 @@
 
 import * as Sentry from '@sentry/react-native';
 
+import * as Application from 'expo-application';
+
 interface SentryConfig {
     dsn?: string;
     environment?: string;
@@ -43,6 +45,12 @@ class SentryService {
         }
 
         try {
+            const release = Application.nativeApplicationVersion
+                ? `${Application.applicationId}@${Application.nativeApplicationVersion}+${Application.nativeBuildVersion}`
+                : undefined;
+
+            const dist = Application.nativeBuildVersion || undefined;
+
             Sentry.init({
                 dsn,
                 // Enable auto session tracking for crash-free users metric
@@ -66,9 +74,9 @@ class SentryService {
                 // Capture failed requests
                 enableCaptureFailedRequests: true,
                 // Set release name (should match source maps)
-                // release: 'ai-do-mobile@1.0.0',
+                release,
                 // Set distribution for build variants
-                // dist: '1',
+                dist,
                 // Hooks for modifying events before sending
                 beforeSend: (event) => {
                     // You can modify or filter events here
@@ -202,6 +210,24 @@ class SentryService {
         return Sentry.startInactiveSpan({
             name,
             op,
+        });
+    }
+
+    /**
+     * Execute an async function within a tracing span
+     */
+    async traceAsync<T>(
+        name: string,
+        op: string,
+        task: () => Promise<T>,
+        data?: Record<string, unknown>
+    ): Promise<T> {
+        if (!this.isEnabled) {
+            return task();
+        }
+
+        return Sentry.startSpan({ name, op, attributes: data as any }, async () => {
+            return await task();
         });
     }
 

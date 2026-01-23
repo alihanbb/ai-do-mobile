@@ -51,6 +51,7 @@
         "lightMode": "Aydınlık Mod",
         "appTheme": "Uygulama teması",
         "notifications": "Bildirimler",
+        "notificationSettings": "Bildirim Ayarları",
         "notificationsOn": "Açık",
         "notificationsOff": "Kapalı",
         "language": "Dil",
@@ -64,6 +65,12 @@
         "helpSupport": "Yardım & Destek",
         "privacyPolicy": "Gizlilik Politikası",
         "appSettings": "Uygulama Ayarları",
+        "supportAndLegal": "Destek ve Yasal",
+        "termsOfService": "Hizmet Şartları",
+        "about": "Hakkında",
+        "app": "Uygulama",
+        "rateUs": "Bizi Değerlendirin",
+        "shareApp": "Uygulamayı Paylaş",
         "other": "Diğer",
         "version": "AI-Do v1.0.0",
         "enterNameError": "Lütfen adınızı girin",
@@ -215,7 +222,76 @@
         "todayTasks": "Bugünkü Görevler",
         "seeAll": "Tümünü Gör"
     },
-    "time": {
-        "minutes": "dakika"
+    "notifications": {
+        "title": "Bildirimler",
+        "settings": "Bildirim Ayarları",
+        "general": "GENEL",
+        "channels": "KANALLAR",
+        "allowNotifications": "Tüm Bildirimler",
+        "allowNotificationsHint": "Uygulamanın bildirim göndermesini etkinleştir",
+        "pushNotifications": "Anlık Bildirimler",
+        "pushHint": "Hatırlatıcılar, uyarılar ve anlık güncellemeler",
+        "emailNotifications": "E-posta Bildirimleri",
+        "emailHint": "Haftalık özetler, bültenler ve hesap aktiviteleri",
+        "info": "Bildirim tercihlerinizi buradan kişiselleştirebilirsiniz. Ana bildirim iznini kapatmak tüm kanalları devre dışı bırakır.",
+        "emptyTitle": "Bildirim Yok",
+        "emptyText": "Henüz yeni bir bildiriminiz yok. Önemli hatırlatmalar buraya düşecek.",
+        "filterEmpty": "Bu kategoride bildirim bulunmuyor.",
+        "noResults": "Sonuç bulunamadı"
+    },
+    "workingHours": {
+        "title": "Çalışma Saatleri",
+        "description": "Günlük çalışma saatlerinizi belirleyerek size en uygun zamanlarda bildirim gönderilmesini ve verimlilik raporlarınızın optimize edilmesini sağlayın.",
+        "start": "Başlangıç",
+        "end": "Bitiş",
+        "startTime": "Başlangıç Saati",
+        "endTime": "Bitiş Saati",
+        "updateSuccess": "Çalışma saatleri güncellendi",
+        "updateError": "Çalışma saatleri güncellenemedi"
+    },
+    "legal": {
+        "privacyPolicy": {
+            "title": "Gizlilik Politikası",
+            "lastUpdated": "Son Güncelleme: 24 Ocak 2025",
+            "content": "Bu Gizlilik Politikası, AI-Do ('biz', 'bizim' veya 'bize') uygulamasını kullandığınızda bilgilerinizin nasıl toplandığını, kullanıldığını ve paylaşıldığını açıklar.\n\n1. Topladığımız Bilgiler\nUygulamamızı kullandığınızda aşağıdaki bilgileri toplayabiliriz:\n- Hesap Bilgileri: Adınız, e-posta adresiniz ve profil fotoğrafınız.\n- Kullanım Verileri: Uygulamayı nasıl kullandığınıza dair istatistikler ve veriler.\n- Cihaz Bilgileri: Cihaz modeli, işletim sistemi sürümü ve benzersiz cihaz kimlikleri.\n\n2. Bilgilerinizi Nasıl Kullanıyoruz\nTopladığımız bilgileri şu amaçlarla kullanırız:\n- Hizmetlerimizi sağlamak ve sürdürmek.\n- Hesabınızı yönetmek.\n- Size bildirimler ve güncellemeler göndermek.\n- Uygulamamızı geliştirmek ve analiz etmek.\n\n3. Veri Güvenliği\nVerilerinizin güvenliğini sağlamak için endüstri standardı güvenlik önlemleri uyguluyoruz. Ancak, internet üzerinden iletimin veya elektronik depolamanın %100 güvenli olmadığını unutmayın.\n\n4. İletişim\nBu Gizlilik Politikası ile ilgili sorularınız varsa, lütfen bizimle iletişime geçin."
+        },
+        "termsOfService": {
+            "title": "Hizmet Şartları",
+            "lastUpdated": "Son Güncelleme: 24 Ocak 2025",
+            "content": "AI-Do'ya hoş geldiniz. Uygulamamızı kullanarak aşağıdaki şartları kabul etmiş olursunuz.\n\n1. Hesap Kullanımı\nHesabınızın güvenliğinden ve yapılan tüm işlemlerden siz sorumlusunuz. Şifrenizi gizli tutmalı ve yetkisiz erişim şüphesi durumunda bize bildirmelisiniz.\n\n2. Kullanım Kuralları\nUygulamayı yasa dışı veya yetkisiz amaçlarla kullanamazsınız. Hizmetlerimizi, uygulamanın çalışmasını engelleyecek veya zarar verecek şekilde kullanamazsınız.\n\n3. Fikri Mülkiyet\nUygulama ve orijinal içeriği, özellikleri ve işlevselliği AI-Do'nun mülkiyetindedir ve telif hakkı yasalarıyla korunmaktadır.\n\n4. Fesih\nŞartlarımızı ihlal etmeniz durumunda, önceden bildirimde bulunmaksızın hesabınızı askıya alma veya sonlandırma hakkımızı saklı tutarız.\n\n5. Değişiklikler\nBu şartları zaman zaman güncelleme hakkımızı saklı tutarız. Değişiklikler yayınlandığı andan itibaren geçerli olacaktır."
+        }
+    },
+    "about": {
+        "title": "Uygulama Hakkında",
+        "description": "AI-Do, yapay zeka destekli akıllı bir görev yönetim ve verimlilik asistanıdır. Günlük planlarınızı optimize etmenize, odaklanmanıza ve hedeflerinize ulaşmanıza yardımcı olur.",
+        "version": "Sürüm",
+        "developer": "Geliştirici",
+        "website": "Web Sitesi",
+        "contact": "İletişim",
+        "contactEmail": "destek@aido.app",
+        "websiteUrl": "www.aido.app"
+    },
+    "help": {
+        "title": "Yardım Merkezi",
+        "faq": "Sıkça Sorulan Sorular",
+        "contactSupport": "Destek ile İletişime Geç",
+        "questions": [
+            {
+                "q": "Görevlerimi nasıl senkronize edebilirim?",
+                "a": "Görevleriniz internet bağlantınız olduğunda otomatik olarak bulut sunucularımızla senkronize edilir. Manuel yenileme için ana sayfayı aşağı çekin."
+            },
+            {
+                "q": "Bildirimleri nasıl kapatabilirim?",
+                "a": "Profil > Ayarlar > Bildirimler menüsünden bildirim tercihlerinizi yönetebilirsiniz."
+            },
+            {
+                "q": "Hesabımı silebilir miyim?",
+                "a": "Evet, Profil sayfasındaki 'Hesabımı Sil' seçeneği ile (varsa) veya destek ekibimizle iletişime geçerek hesabınızı silebilirsiniz."
+            },
+            {
+                "q": "Premium özellikler nelerdir?",
+                "a": "Premium üyelik ile sınırsız yapay zeka önerisi, gelişmiş istatistikler ve reklamsız deneyim elde edersiniz."
+            }
+        ]
     }
 }

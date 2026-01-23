@@ -15,10 +15,11 @@ import { useFocusTimer } from '../../src/features/focus/presentation/hooks/useFo
 import { useFocusStats } from '../../src/features/focus/presentation/hooks/useFocusStats';
 import { DEFAULT_PRESETS, FocusPresetProps } from '../../src/features/focus/domain/entities/FocusPreset';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
-import { TimerCircle } from '../../components/pomo/TimerCircle';
-import { PresetModal } from '../../components/pomo/PresetModal';
-import { StatsModal } from '../../components/pomo/StatsModal';
-import { TaskSelectionModal } from '../../components/pomo/TaskSelectionModal';
+import { TimerCircle } from '../../src/features/focus/components/TimerCircle';
+import { PresetModal } from '../../src/features/focus/components/PresetModal';
+import { StatsModal } from '../../src/features/focus/components/StatsModal';
+import { TaskSelectionModal } from '../../src/features/focus/components/TaskSelectionModal';
+import { CompletionModal } from '../../src/features/focus/components/CompletionModal';
 
 export default function PomoScreen() {
     const { isDark } = useThemeStore();
@@ -62,7 +63,18 @@ export default function PomoScreen() {
     const [presetModalVisible, setPresetModalVisible] = useState(false);
     const [statsModalVisible, setStatsModalVisible] = useState(false);
     const [taskSelectionVisible, setTaskSelectionVisible] = useState(false);
+    const [completionModalVisible, setCompletionModalVisible] = useState(false);
+    const [lastSessionDuration, setLastSessionDuration] = useState(0);
     const [presets] = useState<FocusPresetProps[]>(DEFAULT_PRESETS);
+
+    // Effect to handle completion state
+    useEffect(() => {
+        if (timerState === 'completed') {
+            const duration = activePreset?.durationMinutes || 25;
+            setLastSessionDuration(duration);
+            setCompletionModalVisible(true);
+        }
+    }, [timerState, activePreset]);
 
     const handleStartPause = () => {
         if (timerState === 'idle' || timerState === 'completed') {
@@ -75,6 +87,11 @@ export default function PomoScreen() {
         } else if (timerState === 'paused') {
             resume();
         }
+    };
+
+    const handleCompletionDismiss = () => {
+        setCompletionModalVisible(false);
+        reset(); // Auto reset after dismissing the modal
     };
 
     const getButtonText = () => {
@@ -241,6 +258,14 @@ export default function PomoScreen() {
                 onClose={() => setTaskSelectionVisible(false)}
                 onSelectTask={(taskId, taskTitle) => setLinkedTask(taskId, taskTitle)}
                 selectedTaskId={linkedTaskId || undefined}
+            />
+
+            {/* Completion Modal */}
+            <CompletionModal
+                visible={completionModalVisible}
+                onClose={handleCompletionDismiss}
+                durationMinutes={lastSessionDuration}
+                focusMode={mode}
             />
         </SafeAreaView>
     );

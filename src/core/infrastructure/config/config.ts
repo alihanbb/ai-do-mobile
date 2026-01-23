@@ -7,9 +7,9 @@ const getApiBaseUrl = (): string => {
         // Use '10.0.2.2' for Android Emulator  
         // Use actual IP for real device on same network
         return Platform.select({
-            ios: 'http://localhost:5208/api/',
-            android: 'http://192.168.1.101:5208/api/',
-            default: 'http://192.168.1.101:5208/api/'
+            ios: 'http://192.168.1.103:5208/api/',
+            android: 'http://192.168.1.103:5208/api/',
+            default: 'http://192.168.1.103:5208/api/'
         });
     }
     return 'https://api.aido.app/api';

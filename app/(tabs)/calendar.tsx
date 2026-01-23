@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useTaskStore } from '../../store/taskStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
-import { SwipeableTaskCard } from '../../components/task/SwipeableTaskCard';
+import { SwipeableTaskCard } from '../../src/features/task/components/SwipeableTaskCard';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, RefreshCw, Link as LinkIcon } from 'lucide-react-native';
 import { calendarApi } from '../../src/features/calendar/infrastructure/api/calendarApi';
 import { CalendarEventSummaryDto, DaySummaryDto } from '../../src/features/calendar/domain/types';

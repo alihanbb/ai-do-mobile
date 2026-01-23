@@ -1,6 +1,11 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { config } from '../config/config';
-import { secureStorage } from '../storage/SecureStorageAdapter';
+import { SecureStorageAdapter } from '../storage/SecureStorageAdapter';
+import { sentryService } from '../monitoring/sentryService';
+
+const secureStorage = new SecureStorageAdapter();
+const TOKEN_KEY = config.auth.tokenKey;
+const REFRESH_TOKEN_KEY = config.auth.refreshTokenKey;
 
 const apiClient: AxiosInstance = axios.create({
     baseURL: config.api.baseUrl,
@@ -9,9 +14,6 @@ const apiClient: AxiosInstance = axios.create({
         'Content-Type': 'application/json',
     },
 });
-
-const TOKEN_KEY = config.auth.tokenKey;
-const REFRESH_TOKEN_KEY = config.auth.refreshTokenKey;
 
 apiClient.interceptors.request.use(
     async (requestConfig: InternalAxiosRequestConfig) => {
@@ -26,10 +28,23 @@ apiClient.interceptors.request.use(
                 console.log('⚠️ No token found in storage');
             }
             console.log(`🌐 API Request: [${requestConfig.method?.toUpperCase()}] ${requestConfig.baseURL}${requestConfig.url}`);
+
+            // Add breadcrumb for request
+            sentryService.addBreadcrumb({
+                category: 'api',
+                message: `[${requestConfig.method?.toUpperCase()}] ${requestConfig.url}`,
+                data: {
+                    url: requestConfig.url,
+                    method: requestConfig.method,
+                },
+                level: 'info'
+            });
+
             console.log('Headers:', JSON.stringify(requestConfig.headers, null, 2));
             console.log('Payload:', JSON.stringify(requestConfig.data, null, 2));
         } catch (error) {
             console.warn('Failed to get auth token:', error);
+            sentryService.captureException(error as Error, { context: 'AuthTokenRetrieval' });
         }
         return requestConfig;
     },
@@ -47,6 +62,29 @@ apiClient.interceptors.response.use(
     },
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+        // Capture all API errors in Sentry
+        if (error.response) {
+            // Server responded with a status code that falls out of the range of 2xx
+            sentryService.captureException(error, {
+                status: error.response.status,
+                url: error.config?.url,
+                method: error.config?.method,
+                data: error.response.data,
+                headers: error.response.headers
+            });
+        } else if (error.request) {
+            // The request was made but no response was received
+            sentryService.captureException(error, {
+                context: 'NoResponse',
+                url: error.config?.url,
+                method: error.config?.method
+            });
+        } else {
+            // Something happened in setting up the request
+            sentryService.captureException(error, { context: 'RequestSetup' });
+        }
+
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
@@ -74,6 +112,7 @@ apiClient.interceptors.response.use(
                 await secureStorage.remove(TOKEN_KEY);
                 await secureStorage.remove(REFRESH_TOKEN_KEY);
                 console.error('Token refresh failed:', refreshError);
+                sentryService.captureException(refreshError as Error, { context: 'TokenRefresh' });
             }
         }
 
@@ -82,6 +121,7 @@ apiClient.interceptors.response.use(
 );
 
 export { apiClient };
+export const api = apiClient;
 
 export interface ApiError {
     message: string;

@@ -14,6 +14,8 @@ export interface UserProps {
 export interface UserPreferences {
     theme: 'light' | 'dark' | 'system';
     notifications: boolean;
+    emailNotifications: boolean;
+    pushNotifications: boolean;
     language: string;
     workingHours?: {
         start: string;
@@ -64,6 +66,8 @@ export class User extends BaseEntity<UserProps> {
         this._preferences = props.preferences || {
             theme: 'system',
             notifications: true,
+            emailNotifications: true,
+            pushNotifications: true,
             language: 'tr',
         };
     }

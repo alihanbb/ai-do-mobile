@@ -2,8 +2,8 @@
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet, Platform as RNPlatform, Image } from 'react-native';
-import { ThemeProvider, useTheme } from '../components/shared/ThemeProvider';
-import { ErrorBoundary } from '../components/shared/ErrorBoundary';
+import { ThemeProvider, useTheme } from '../src/components/shared/ThemeProvider';
+import { ErrorBoundary } from '../src/components/shared/ErrorBoundary';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { useTaskStore } from '../store/taskStore';

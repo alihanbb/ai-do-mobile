@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { useThemeStore } from '../../store/themeStore';
-import { getColors, Colors, spacing, borderRadius } from '../../constants/colors';
+import { useThemeStore } from '../../../store/themeStore';
+import { getColors, Colors, spacing, borderRadius } from '../../../constants/colors';
 
 interface ThemeContextType {
     colors: Colors;

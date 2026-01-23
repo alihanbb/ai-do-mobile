@@ -1,5 +1,5 @@
-﻿import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Platform, StatusBar } from 'react-native';
+﻿import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Platform, StatusBar, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getColors, spacing, borderRadius } from '../../constants/colors';
@@ -12,8 +12,11 @@ import { PeakHours } from '../../components/analytics/PeakHours';
 import { TopCategories } from '../../components/analytics/TopCategories';
 import { InsightCard } from '../../components/analytics/InsightCard';
 import { StreakCard } from '../../components/analytics/StreakCard';
-import { Settings, Target, Timer, Bell, Smartphone, ChevronLeft } from 'lucide-react-native';
+import { Settings, Target, Timer, ChevronLeft } from 'lucide-react-native';
 import { TaskCategory } from '../../types/task';
+import { analyticsApi, AnalyticsResponse, StreaksResponse, PeakHoursResponse } from '../../src/features/analytics/infrastructure/api/analyticsApi';
+import { useFocusStore } from 'expo-router/build/global-state/router-store';
+import { useFocusEffect } from '@react-navigation/native'; // Ensure using proper focus effect
 
 type TabOption = 'day' | 'week' | 'trend';
 
@@ -24,93 +27,133 @@ export default function AnalyticsScreen() {
     const { tasks } = useTaskStore();
 
     const [activeTab, setActiveTab] = useState<TabOption>('day');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const completedTasks = tasks.filter((t) => t.completed).length;
-    const totalTasks = tasks.length;
+    // API Data States
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsResponse | null>(null);
+    const [streaksData, setStreaksData] = useState<StreaksResponse | null>(null);
+    const [peakHoursData, setPeakHoursData] = useState<PeakHoursResponse | null>(null);
+
+    // Fetch analytics data from backend
+    const fetchAnalytics = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const period = activeTab === 'trend' ? 'month' : activeTab;
+            console.log('Fetching analytics for period:', period);
+
+            const [analytics, streaks, peakHours] = await Promise.all([
+                analyticsApi.getAnalytics(period),
+                analyticsApi.getStreaks(),
+                analyticsApi.getPeakHours(activeTab === 'day' ? 'week' : 'week')
+            ]);
+
+            setAnalyticsData(analytics);
+            setStreaksData(streaks);
+            setPeakHoursData(peakHours);
+        } catch (err: any) {
+            console.error('Failed to fetch analytics:', err);
+            // Don't show error to user immediately, just log it. 
+            // The charts will render fallback/empty states.
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeTab]);
+
+    // Refetch when tab comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchAnalytics();
+        }, [fetchAnalytics])
+    );
+
+    // Local fallback calculations when API fails
+    const completedTasks = analyticsData?.tasksCompleted ?? tasks.filter((t) => t.completed).length;
+    const totalTasks = (analyticsData?.tasksCreated ?? 0) + (analyticsData?.tasksCompleted ?? 0) || tasks.length;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     // Usage breakdown data
     const usageData = useMemo(() => {
-        const completed = tasks.filter(t => t.completed).length;
-        const pending = tasks.filter(t => !t.completed).length;
-        const total = tasks.length || 1;
+        const completed = analyticsData?.tasksCompleted ?? tasks.filter(t => t.completed).length;
+        const pending = (analyticsData?.tasksCreated ?? tasks.filter(t => !t.completed).length) - completed;
+        const total = (completed + Math.max(0, pending)) || 1;
 
         return [
             { label: t('tasks.completed'), percent: Math.round((completed / total) * 100), color: colors.success },
-            { label: t('tasks.pending'), percent: Math.round((pending / total) * 100), color: colors.secondary },
+            { label: t('tasks.pending'), percent: Math.round((Math.max(0, pending) / total) * 100), color: colors.secondary },
             { label: t('tasks.overdue'), percent: 0, color: colors.error },
         ];
-    }, [tasks, colors]);
+    }, [analyticsData, tasks, colors, t]);
 
-    // Peak hours - mock data (would be calculated from task completion times)
-    const peakHoursData = useMemo(() => {
-        const hours = new Array(24).fill(0);
-        // Mock peak activity around 10-11 AM and 2-4 PM
-        hours[9] = 2;
-        hours[10] = 5;
-        hours[11] = 3;
-        hours[14] = 4;
-        hours[15] = 6;
-        hours[16] = 3;
-        return hours;
-    }, []);
+    // Peak hours from API or generate from hourlyActivity
+    const peakHoursActivityData = useMemo(() => {
+        if (peakHoursData?.hourlyActivity) {
+            const hours = new Array(24).fill(0);
+            Object.entries(peakHoursData.hourlyActivity).forEach(([hour, count]) => {
+                const hourNum = parseInt(hour, 10);
+                if (!isNaN(hourNum) && hourNum >= 0 && hourNum < 24) {
+                    hours[hourNum] = count;
+                }
+            });
+            return hours;
+        }
+        // Fallback mock data if completely empty, so charts don't crash
+        return new Array(24).fill(0);
+    }, [peakHoursData]);
 
-    // Top categories
+    // Top categories from local data (backend doesn't have category breakdown yet)
     const topCategories = useMemo(() => {
         const categoryMap = new Map<TaskCategory, number>();
-
         tasks.filter(t => t.completed).forEach((task) => {
             if (task.category) {
                 categoryMap.set(task.category, (categoryMap.get(task.category) || 0) + 1);
             }
         });
-
         return Array.from(categoryMap.entries())
-            .map(([category, count]) => ({
-                category,
-                label: category,
-                count,
-            }))
+            .map(([category, count]) => ({ category, label: category, count }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 4);
     }, [tasks]);
 
-    // Focus metrics
-    const focusMetrics = [
-        { icon: Target, value: '2s 35d', label: i18n.language === 'en' ? 'LONGEST FOCUS' : 'EN UZUN ODAK', iconColor: colors.primary },
-        { icon: Timer, value: '16d', label: i18n.language === 'en' ? 'UNINTERRUPTED' : 'KESİNTİSİZ', iconColor: colors.secondary },
-    ];
+    // Focus metrics from API
+    const focusMetrics = useMemo(() => {
+        const focusMins = analyticsData?.focusMinutes ?? 0;
+        const focusHours = Math.floor(focusMins / 60);
+        const focusMinsRemainder = focusMins % 60;
+        const focusDisplay = focusHours > 0
+            ? `${focusHours}h ${focusMinsRemainder}m`
+            : `${focusMins}m`;
 
-    // Streak calculation
+        return [
+            { icon: Target, value: focusDisplay, label: i18n.language === 'en' ? 'TOTAL FOCUS' : 'TOPLAM ODAK', iconColor: colors.primary },
+            { icon: Timer, value: `${streaksData?.currentStreak ?? 0}d`, label: i18n.language === 'en' ? 'CURRENT STREAK' : 'GÜNCEL SERİ', iconColor: colors.secondary },
+        ];
+    }, [analyticsData, streaksData, i18n.language, colors]);
+
+    // Streak from API or local calculation
     const { currentStreak, longestStreak, todayCompleted } = useMemo(() => {
+        if (streaksData) {
+            return {
+                currentStreak: streaksData.currentStreak,
+                longestStreak: streaksData.longestStreak,
+                todayCompleted: streaksData.completedToday
+            };
+        }
+
+        // Local fallback calculation if API fails
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const todayCompleted = tasks.some((task) => {
+        const todayCompletedLocal = tasks.some((task) => {
             if (!task.completed || !task.updatedAt) return false;
             const completedDate = new Date(task.updatedAt);
             completedDate.setHours(0, 0, 0, 0);
             return completedDate.getTime() === today.getTime();
         });
 
-        let current = todayCompleted ? 1 : 0;
-        let checkDate = new Date(today);
-
-        for (let i = 1; i < 365; i++) {
-            checkDate.setDate(checkDate.getDate() - 1);
-            const hasCompleted = tasks.some((task) => {
-                if (!task.completed || !task.updatedAt) return false;
-                const completedDate = new Date(task.updatedAt);
-                completedDate.setHours(0, 0, 0, 0);
-                return completedDate.getTime() === checkDate.getTime();
-            });
-
-            if (hasCompleted) current++;
-            else break;
-        }
-
-        return { currentStreak: current, longestStreak: Math.max(current, 7), todayCompleted };
-    }, [tasks]);
+        return { currentStreak: todayCompletedLocal ? 1 : 0, longestStreak: 1, todayCompleted: todayCompletedLocal };
+    }, [streaksData, tasks]);
 
     const styles = createStyles(colors);
 
@@ -135,7 +178,7 @@ export default function AnalyticsScreen() {
             </View>
 
             {/* Peak Hours */}
-            <PeakHours peakTime="10:00 - 11:00" data={peakHoursData} />
+            <PeakHours peakTime={peakHoursData?.peakTimeRange ?? "00:00 - 00:00"} data={peakHoursActivityData} />
 
             {/* Usage Breakdown */}
             <UsageBreakdown data={usageData} title={t('analytics.taskStatus')} />
@@ -235,6 +278,9 @@ export default function AnalyticsScreen() {
                 style={styles.scrollView}
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={isLoading} onRefresh={fetchAnalytics} />
+                }
             >
                 {activeTab === 'day' && renderDayView()}
                 {activeTab === 'week' && renderWeekView()}

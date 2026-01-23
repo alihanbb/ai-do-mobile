@@ -32,151 +32,159 @@ interface AuthState {
     forgotPassword: (email: string) => Promise<boolean>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isLoading: false,
-    isInitialized: false,
-    isOnboardingComplete: false,
-    error: null,
+import { sentryMiddleware } from '../../../../core/infrastructure/monitoring/sentryMiddleware';
 
-    hydrateAuth: async () => {
-        try {
-            const tokensResult = await authRepository.getStoredTokens();
-            const userResult = await authRepository.getCurrentUser();
-            const onboardingComplete = await authRepository.isOnboardingComplete();
-
-            if (tokensResult.isSuccess && tokensResult.value &&
-                userResult.isSuccess && userResult.value) {
-                const userData = userResult.value.toJSON();
-
-                // Set Sentry user context for crash reporting
-                sentryService.setUser({
-                    id: userData.id,
-                    email: userData.email,
-                    username: userData.name,
-                });
-
-                set({
-                    user: userData,
-                    token: tokensResult.value.accessToken,
-                    isAuthenticated: true,
-                    isInitialized: true,
-                    isOnboardingComplete: onboardingComplete,
-                });
-            } else {
-                set({
-                    isInitialized: true,
-                    isOnboardingComplete: onboardingComplete,
-                });
-            }
-        } catch (error) {
-            console.error('Error hydrating auth:', error);
-            set({ isInitialized: true });
-        }
-    },
-
-    login: async (email: string, password: string) => {
-        set({ isLoading: true, error: null });
-
-        const result = await loginUseCase.execute({ email, password });
-
-        if (result.isSuccess) {
-            const { user, tokens } = result.value;
-            const userData = user.toJSON();
-
-            // Set Sentry user context for crash reporting
-            sentryService.setUser({
-                id: userData.id,
-                email: userData.email,
-                username: userData.name,
-            });
-
-            set({
-                user: userData,
-                token: tokens.accessToken,
-                isAuthenticated: true,
-                isLoading: false,
-            });
-            return true;
-        } else {
-            set({ error: result.error.message, isLoading: false });
-            return false;
-        }
-    },
-
-    register: async (name: string, email: string, password: string) => {
-        set({ isLoading: true, error: null });
-
-        const result = await registerUseCase.execute({ email, password, name });
-
-        if (result.isSuccess) {
-            const { user, tokens } = result.value;
-            const userData = user.toJSON();
-
-            // Set Sentry user context for crash reporting
-            sentryService.setUser({
-                id: userData.id,
-                email: userData.email,
-                username: userData.name,
-            });
-
-            set({
-                user: userData,
-                token: tokens.accessToken,
-                isAuthenticated: true,
-                isLoading: false,
-            });
-            return true;
-        } else {
-            set({ error: result.error.message, isLoading: false });
-            return false;
-        }
-    },
-
-    logout: async () => {
-        await logoutUseCase.execute();
-
-        // Clear Sentry user context on logout
-        sentryService.setUser(null);
-
-        set({
+export const useAuthStore = create<AuthState>()(
+    sentryMiddleware(
+        (set, get) => ({
             user: null,
             token: null,
             isAuthenticated: false,
-        });
-    },
+            isLoading: false,
+            isInitialized: false,
+            isOnboardingComplete: false,
+            error: null,
 
-    setUser: (user: UserProps) => set({ user }),
+            hydrateAuth: async () => {
+                try {
+                    const tokensResult = await authRepository.getStoredTokens();
+                    const userResult = await authRepository.getCurrentUser();
+                    const onboardingComplete = await authRepository.isOnboardingComplete();
 
-    updateUser: (updates: Partial<UserProps>) => {
-        const currentUser = get().user;
-        if (currentUser) {
-            set({ user: { ...currentUser, ...updates } });
-        }
-    },
+                    if (tokensResult.isSuccess && tokensResult.value &&
+                        userResult.isSuccess && userResult.value) {
+                        const userData = userResult.value.toJSON();
 
-    completeOnboarding: async () => {
-        await authRepository.setOnboardingComplete();
-        set({ isOnboardingComplete: true });
-    },
+                        // Set Sentry user context for crash reporting
+                        sentryService.setUser({
+                            id: userData.id,
+                            email: userData.email,
+                            username: userData.name,
+                        });
 
-    resetOnboarding: async () => {
-        await authRepository.resetOnboarding();
-        set({ isOnboardingComplete: false });
-    },
+                        set({
+                            user: userData,
+                            token: tokensResult.value.accessToken,
+                            isAuthenticated: true,
+                            isInitialized: true,
+                            isOnboardingComplete: onboardingComplete,
+                        });
+                    } else {
+                        set({
+                            isInitialized: true,
+                            isOnboardingComplete: onboardingComplete,
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error hydrating auth:', error);
+                    set({ isInitialized: true });
+                }
+            },
 
-    forgotPassword: async (email: string) => {
-        set({ isLoading: true, error: null });
-        const result = await authRepository.forgotPassword(email);
-        set({ isLoading: false });
+            login: async (email: string, password: string) => {
+                set({ isLoading: true, error: null });
 
-        if (result.isSuccess) {
-            return true;
-        } else {
-            set({ error: result.error.message });
-            return false;
-        }
-    },
-}));
+                const result = await loginUseCase.execute({ email, password });
+
+                if (result.isSuccess) {
+                    const { user, tokens } = result.value;
+                    const userData = user.toJSON();
+
+                    // Set Sentry user context for crash reporting
+                    sentryService.setUser({
+                        id: userData.id,
+                        email: userData.email,
+                        username: userData.name,
+                    });
+
+                    set({
+                        user: userData,
+                        token: tokens.accessToken,
+                        isAuthenticated: true,
+                        isLoading: false,
+                    });
+                    return true;
+                } else {
+                    set({ error: result.error.message, isLoading: false });
+                    return false;
+                }
+            },
+
+            register: async (name: string, email: string, password: string) => {
+                set({ isLoading: true, error: null });
+
+                const result = await registerUseCase.execute({ email, password, name });
+
+                if (result.isSuccess) {
+                    const { user, tokens } = result.value;
+                    const userData = user.toJSON();
+
+                    // Set Sentry user context for crash reporting
+                    sentryService.setUser({
+                        id: userData.id,
+                        email: userData.email,
+                        username: userData.name,
+                    });
+
+                    set({
+                        user: userData,
+                        token: tokens.accessToken,
+                        isAuthenticated: true,
+                        isLoading: false,
+                    });
+                    return true;
+                } else {
+                    set({ error: result.error.message, isLoading: false });
+                    return false;
+                }
+            },
+
+            logout: async () => {
+                await logoutUseCase.execute();
+
+                // Clear Sentry user context on logout
+                sentryService.setUser(null);
+
+                set({
+                    user: null,
+                    token: null,
+                    isAuthenticated: false,
+                });
+            },
+
+            setUser: (user: UserProps) => set({ user }),
+
+            updateUser: (updates: Partial<UserProps>) => {
+                const currentUser = get().user;
+                if (currentUser) {
+                    set({ user: { ...currentUser, ...updates } });
+                }
+            },
+
+            completeOnboarding: async () => {
+                await authRepository.setOnboardingComplete();
+                set({ isOnboardingComplete: true });
+            },
+
+            resetOnboarding: async () => {
+                await authRepository.resetOnboarding();
+                set({ isOnboardingComplete: false });
+            },
+
+            forgotPassword: async (email: string) => {
+                set({ isLoading: true, error: null });
+                const result = await authRepository.forgotPassword(email);
+                set({ isLoading: false });
+
+                if (result.isSuccess) {
+                    return true;
+                } else {
+                    set({ error: result.error.message });
+                    return false;
+                }
+            },
+        }), 'AuthStore', {
+        mask: ['token']
+    }
+    )
+);

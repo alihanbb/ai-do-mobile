@@ -12,11 +12,14 @@ import {
     ActivityIndicator,
     Alert,
     Modal,
+    Share,
+    Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import * as StoreReview from 'expo-store-review';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../../src/core/infrastructure/i18n/i18n';
 import { useThemeStore } from '../../store/themeStore';
@@ -43,6 +46,10 @@ import {
     Shield,
     AlertTriangle,
     Camera,
+    FileText,
+    Info,
+    Star,
+    Share2,
 } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -248,21 +255,74 @@ export default function ProfileScreen() {
         }
     };
 
-    const moreItems = [
+    const handleShareApp = async () => {
+        try {
+            await Share.share({
+                message: t('profile.shareMessage') || 'Check out AI-Do, the smart task manager! https://aido.app',
+                url: 'https://aido.app', // iOS
+                title: 'AI-Do' // Android
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleRateUs = async () => {
+        try {
+            if (await StoreReview.hasAction()) {
+                await StoreReview.requestReview();
+            } else {
+                // Fallback
+                if (Platform.OS === 'android') {
+                    Linking.openURL('market://details?id=com.aido.mobile');
+                } else {
+                    Linking.openURL('itms-apps://itunes.apple.com/app/id123456789');
+                }
+            }
+        } catch (error) {
+            console.error('Rate us error:', error);
+            // Fallback on error
+            if (Platform.OS === 'android') {
+                Linking.openURL('market://details?id=com.aido.mobile');
+            } else {
+                Linking.openURL('itms-apps://itunes.apple.com/app/id123456789');
+            }
+        }
+    };
+
+    const supportItems = [
         {
             icon: <HelpCircle size={20} color={colors.textSecondary} />,
             label: t('profile.helpSupport'),
-            onPress: () => { },
+            onPress: () => router.push('/settings/help'),
         },
         {
             icon: <Shield size={20} color={colors.textSecondary} />,
             label: t('profile.privacyPolicy'),
-            onPress: () => { },
+            onPress: () => router.push('/settings/privacy'),
         },
         {
-            icon: <Settings size={20} color={colors.textSecondary} />,
-            label: t('profile.appSettings'),
-            onPress: () => { },
+            icon: <FileText size={20} color={colors.textSecondary} />,
+            label: t('profile.termsOfService'),
+            onPress: () => router.push('/settings/terms'),
+        },
+        {
+            icon: <Info size={20} color={colors.textSecondary} />,
+            label: t('profile.about'),
+            onPress: () => router.push('/settings/about'),
+        },
+    ];
+
+    const appItems = [
+        {
+            icon: <Star size={20} color={colors.textSecondary} />,
+            label: t('profile.rateUs'),
+            onPress: handleRateUs,
+        },
+        {
+            icon: <Share2 size={20} color={colors.textSecondary} />,
+            label: t('profile.shareApp'),
+            onPress: handleShareApp,
         },
     ];
 
@@ -284,9 +344,9 @@ export default function ProfileScreen() {
                         onPress={handleAvatarPress}
                         disabled={isUploading}
                     >
-                        {user?.avatarUrl ? (
+                        {user?.avatar ? (
                             <Image
-                                source={{ uri: user.avatarUrl }}
+                                source={{ uri: user.avatar }}
                                 style={styles.avatarImage}
                                 contentFit="cover"
                                 transition={1000}
@@ -378,32 +438,21 @@ export default function ProfileScreen() {
                         />
                     </View>
 
-                    {/* Notifications Toggle */}
-                    <View style={[styles.menuItem, styles.menuItemBorder]}>
+                    <TouchableOpacity
+                        style={[styles.menuItem, styles.menuItemBorder]}
+                        onPress={() => router.push('/settings/notifications')}
+                    >
                         <View style={styles.menuItemLeft}>
                             <Bell size={20} color={colors.textSecondary} />
                             <View>
-                                <Text style={styles.menuItemLabel}>{t('profile.notifications')}</Text>
+                                <Text style={styles.menuItemLabel}>{t('notifications.title')}</Text>
                                 <Text style={styles.menuItemHint}>
-                                    {preferences?.notificationsEnabled ? t('profile.notificationsOn') : t('profile.notificationsOff')}
+                                    {t('profile.manageNotifications')}
                                 </Text>
                             </View>
                         </View>
-                        {isSaving === 'notifications' ? (
-                            <ActivityIndicator size="small" color={colors.primary} />
-                        ) : (
-                            <Switch
-                                value={preferences?.notificationsEnabled ?? false}
-                                onValueChange={handleNotificationsToggle}
-                                trackColor={{
-                                    false: colors.border,
-                                    true: colors.primary + '50'
-                                }}
-                                thumbColor={preferences?.notificationsEnabled ? colors.primary : colors.textMuted}
-                                disabled={isLoading}
-                            />
-                        )}
-                    </View>
+                        <ChevronRight size={18} color={colors.textMuted} />
+                    </TouchableOpacity>
 
                     {/* Language */}
                     <TouchableOpacity
@@ -428,7 +477,10 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
 
                     {/* Working Hours */}
-                    <TouchableOpacity style={[styles.menuItem, styles.menuItemBorder]}>
+                    <TouchableOpacity
+                        style={[styles.menuItem, styles.menuItemBorder]}
+                        onPress={() => router.push('/settings/working-hours')}
+                    >
                         <View style={styles.menuItemLeft}>
                             <Clock size={20} color={colors.textSecondary} />
                             <View>
@@ -474,15 +526,36 @@ export default function ProfileScreen() {
                     </View>
                 </Card>
 
-                {/* More Section */}
-                <Text style={styles.sectionTitle}>{t('profile.other')}</Text>
+                {/* Support & Legal Section */}
+                <Text style={styles.sectionTitle}>{t('profile.supportAndLegal')}</Text>
                 <Card variant='default' padding='none' style={styles.settingsCard}>
-                    {moreItems.map((item, index) => (
+                    {supportItems.map((item, index) => (
                         <TouchableOpacity
                             key={index}
                             style={[
                                 styles.menuItem,
-                                index < moreItems.length - 1 && styles.menuItemBorder,
+                                index < supportItems.length - 1 && styles.menuItemBorder,
+                            ]}
+                            onPress={item.onPress}
+                        >
+                            <View style={styles.menuItemLeft}>
+                                {item.icon}
+                                <Text style={styles.menuItemLabel}>{item.label}</Text>
+                            </View>
+                            <ChevronRight size={18} color={colors.textMuted} />
+                        </TouchableOpacity>
+                    ))}
+                </Card>
+
+                {/* App Section */}
+                <Text style={styles.sectionTitle}>{t('profile.app')}</Text>
+                <Card variant='default' padding='none' style={styles.settingsCard}>
+                    {appItems.map((item, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={[
+                                styles.menuItem,
+                                index < appItems.length - 1 && styles.menuItemBorder,
                             ]}
                             onPress={item.onPress}
                         >
